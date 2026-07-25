@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -61,18 +61,28 @@ jobs:
           python -m py_compile automation/utils/html_reporter.py
           python -m py_compile automation/utils/github_summary.py
 
-      # Stage 5: Deploy to GitHub Pages
+      # Stage 5: Deploy to GitHub Pages (Dual-strategy for 100% reliability)
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        continue-on-error: true
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
+        continue-on-error: true
         with:
           path: './dist'
 
-      - name: Stage 5: Deploy to GitHub Pages
+      - name: Stage 5: Deploy to GitHub Pages (Actions Deploy)
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Stage 5 (Fallback): Publish to gh-pages Branch
+        if: steps.deployment.outcome != 'success'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
 
       # Stage 6: Wait for Deployment
       - name: Stage 6: Wait for Live Deployment Propagation
