@@ -1,11 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 import mysql.connector
 
 app = FastAPI()
 
-# CORS for Flutter
+# CORS for Flutter & Web
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,6 +13,57 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Connection Manager for Real-Time WebSockets Sync (Website <-> Mobile)
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: dict[int, list[WebSocket]] = {}
+
+    async def connect(self, websocket: WebSocket, user_id: int):
+        await websocket.accept()
+        if user_id not in self.active_connections:
+            self.active_connections[user_id] = []
+        self.active_connections[user_id].append(websocket)
+
+    def disconnect(self, websocket: WebSocket, user_id: int):
+        if user_id in self.active_connections:
+            if websocket in self.active_connections[user_id]:
+                self.active_connections[user_id].remove(websocket)
+            if not self.active_connections[user_id]:
+                del self.active_connections[user_id]
+
+    async def broadcast_to_user(self, user_id: int, data: dict):
+        if user_id in self.active_connections:
+            for connection in list(self.active_connections[user_id]):
+                try:
+                    await connection.send_json(data)
+                except Exception:
+                    pass
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    await manager.connect(websocket, user_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            await manager.broadcast_to_user(user_id, data)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, user_id)
+
+class LiveSyncPayload(BaseModel):
+    user_id: int
+    event_type: str
+    data: dict
+
+@app.post("/sync/broadcast")
+async def broadcast_update(payload: LiveSyncPayload):
+    await manager.broadcast_to_user(payload.user_id, {
+        "event": payload.event_type,
+        "data": payload.data
+    })
+    return {"status": "broadcast_sent", "user_id": payload.user_id}
 
 # MySQL Connection
 db = mysql.connector.connect(

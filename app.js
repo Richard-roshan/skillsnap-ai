@@ -1,13 +1,79 @@
 // SkillSnap AI Application JavaScript Controller
 
-// Initialize Lucide Icons & Components
+// Real-time WebSocket Connection Handle
+let liveSyncSocket = null;
+const CURRENT_USER_ID = 1;
+
+// Initialize Lucide Icons, Components & Live Sync
 document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) {
     lucide.createIcons();
   }
   initHoursChart();
   initTheme();
+  initWebSocketSync();
 });
+
+// --- Real-Time WebSocket Live Sync (Website <-> Mobile) ---
+function initWebSocketSync() {
+  const wsHost = window.location.hostname || 'localhost';
+  const wsUrl = `ws://${wsHost}:8000/ws/${CURRENT_USER_ID}`;
+
+  try {
+    liveSyncSocket = new WebSocket(wsUrl);
+
+    liveSyncSocket.onopen = () => {
+      console.log('⚡ Connected to SkillSnap Real-Time Sync Service');
+    };
+
+    liveSyncSocket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        console.log('⚡ Real-time Event Received from Mobile:', payload);
+        if (payload.event === 'MOBILE_UPDATE' || payload.event === 'DATA_UPDATED') {
+          showToast(`📱 Live Sync: ${payload.data.message || 'Data updated on Mobile!'}`, 'success');
+        }
+      } catch (err) {
+        console.warn('Failed to parse WebSocket message', err);
+      }
+    };
+
+    liveSyncSocket.onerror = (err) => {
+      console.warn('WebSocket sync notice: Local server connecting...', err);
+    };
+
+    liveSyncSocket.onclose = () => {
+      setTimeout(initWebSocketSync, 5000); // Auto reconnect
+    };
+  } catch (e) {
+    console.warn('WebSocket init exception:', e);
+  }
+}
+
+function emitLiveSyncUpdate(eventType, data) {
+  const payload = {
+    user_id: CURRENT_USER_ID,
+    event: eventType,
+    data: data,
+    timestamp: new Date().toISOString()
+  };
+
+  if (liveSyncSocket && liveSyncSocket.readyState === WebSocket.OPEN) {
+    liveSyncSocket.send(JSON.stringify(payload));
+  } else {
+    // Fallback HTTP POST broadcast
+    const apiHost = window.location.hostname || 'localhost';
+    fetch(`http://${apiHost}:8000/sync/broadcast`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: CURRENT_USER_ID,
+        event_type: eventType,
+        data: data
+      })
+    }).catch(err => console.warn('Sync broadcast fallback error:', err));
+  }
+}
 
 // --- Toast Notification System ---
 function showToast(message, type = 'info') {
