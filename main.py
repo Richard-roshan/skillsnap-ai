@@ -497,3 +497,41 @@ def get_course_lessons(course_id: int):
     db.close()
 
     return {"lessons": lessons}
+
+
+class ChatRequest(BaseModel):
+    message: str
+    user_id: int = 1
+
+@app.post("/api/ai/chat")
+def ai_chat_assistant(request: ChatRequest):
+    msg = request.message.strip().lower()
+    
+    if any(k in msg for k in ['hello', 'hi', 'hey', 'greetings', 'who are you']):
+        reply = "Hello! I am SkillSnap AI Assistant. I can help you optimize your ATS resume, prepare for mock technical interviews, guide your full-stack career roadmap, or suggest skill-building courses. What would you like to focus on today?"
+    
+    elif any(k in msg for k in ['resume', 'ats', 'cv', 'builder', 'score']):
+        reply = "To maximize your ATS resume score above 90%:\n1. Quantify achievements with metrics (e.g. 'Improved API throughput by 35%').\n2. Include core technical keywords matching target job descriptions (e.g. React, FastAPI, Flutter, SQL, Docker).\n3. Use clean single-column layout formatting. You can use our AI Resume Builder tab to generate a PDF or analyze your current ATS score!"
+        
+    elif any(k in msg for k in ['interview', 'question', 'prep', 'mock', 'behavioral', 'star']):
+        reply = "For technical & behavioral interviews:\n1. Use the STAR method (Situation, Task, Action, Result) for behavioral questions.\n2. For coding & system design, articulate your trade-offs clearly (time vs. space complexity, Caching vs. Consistency).\n3. Practice in our AI Mock Interview tab to record answers and receive real-time AI evaluations!"
+
+    elif any(k in msg for k in ['react', 'javascript', 'js', 'frontend', 'redux', 'hook']):
+        reply = "In modern React development:\n• Use Functional Components with hooks (useState, useEffect, useCallback).\n• Minimize unnecessary re-renders by memoizing expensive calculations with useMemo.\n• Keep global state clean using Context API or Zustand. Check out our Full Stack Masterclass for hands-on React labs!"
+
+    elif any(k in msg for k in ['flutter', 'dart', 'mobile', 'android', 'ios', 'widget']):
+        reply = "Flutter Best Practices:\n• Prefer const constructors to reduce widget rebuild overhead.\n• Use reactive state managers like ValueNotifier, Provider, or Riverpod.\n• Handle network exceptions with fallback models for 100% offline resilience."
+
+    elif any(k in msg for k in ['python', 'fastapi', 'backend', 'sql', 'database', 'api']):
+        reply = "FastAPI & Backend High Performance:\n• Use async route handlers for I/O bound tasks (async def).\n• Implement connection pooling and index your SQL queries for <50ms response times.\n• Enable CORS, Pydantic data validation schemas, and WebSocket streaming for real-time sync."
+
+    elif any(k in msg for k in ['course', 'learn', 'skill', 'study', 'roadmap', 'career', 'job']):
+        reply = "Based on market demand for Full Stack & AI Engineers:\n1. Master Web Foundations (HTML/CSS/JS/React).\n2. Build High-Throughput APIs (Python FastAPI & SQL).\n3. Expand to Mobile (Flutter).\nExplore our interactive My Courses and Skill Growth tabs to track your progress live!"
+
+    else:
+        reply = f"Great question regarding '{request.message}'! SkillSnap AI recommends breaking this down into actionable milestones: 1) Review relevant course modules, 2) Test your knowledge in the Skill Assessment section, and 3) Build a project project artifact to highlight on your resume. Would you like a personalized study plan for this topic?"
+
+    return {
+        "reply": reply,
+        "user_id": request.user_id
+    }
