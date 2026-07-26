@@ -1,0 +1,67 @@
+name: Deploy & Validate SkillSnap AI
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout Code
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Step 3: Install & Compile Python Backend
+      - name: Install Dependencies & Validate Backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi pydantic mysql-connector-python requests beautifulsoup4
+          python -m py_compile main.py
+
+      # Step 4: Bundle Web Frontend
+      - name: Prepare Web Bundle
+        run: |
+          echo "Bundling static web assets..."
+          mkdir -p dist
+          cp index.html app.js styles.css dist/
+          if [ -d "assets" ]; then cp -r assets dist/; fi
+
+      # Step 5: Configure Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+
+      # Step 6: Upload Pages Artifact
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        continue-on-error: true
+        with:
+          path: './dist'
+
+      # Step 7: Deploy Pages (Actions Deploy)
+      - name: Deploy to GitHub Pages (Actions Deploy)
+        id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      # Step 8: Publish Fallback (gh-pages Branch)
+      - name: Publish to gh-pages Branch
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
