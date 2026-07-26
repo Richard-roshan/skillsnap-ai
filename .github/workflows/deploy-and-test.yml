@@ -45,6 +45,7 @@ jobs:
         run: |
           echo "Building application bundle..."
           mkdir -p dist
+          mkdir -p "Test Results"
           cp index.html app.js styles.css dist/
           if [ -d "assets" ]; then cp -r assets dist/; fi
 
@@ -106,15 +107,18 @@ jobs:
       - name: Stage 11: Upload All Reports & Evidence Artifacts
         if: always()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: live-e2e-test-reports
           path: |
             Test Results/
+          if-no-files-found: ignore
           retention-days: 30
 
       # Stage 12: Publish Summary
       - name: Stage 12: Publish GitHub Actions Step Summary
         if: always()
+        continue-on-error: true
         run: |
           if [ -f "Test Results/Summary/summary.md" ]; then
             cat "Test Results/Summary/summary.md" >> $GITHUB_STEP_SUMMARY
