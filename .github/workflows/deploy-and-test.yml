@@ -23,9 +23,6 @@ env:
 
 jobs:
   build-deploy-test:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       # Stage 1: Repository Checkout
@@ -37,10 +34,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Setup Headless Chrome
-        uses: browser-actions/setup-chrome@v1
-        continue-on-error: true
 
       - name: Install Test Framework Dependencies
         run: |
@@ -66,7 +59,7 @@ jobs:
           python -m py_compile automation/utils/html_reporter.py
           python -m py_compile automation/utils/github_summary.py
 
-      # Stage 5: Deploy to GitHub Pages
+      # Stage 5: Deploy to GitHub Pages (Actions Deploy)
       - name: Setup Pages
         uses: actions/configure-pages@v5
         continue-on-error: true
@@ -82,8 +75,9 @@ jobs:
         uses: actions/deploy-pages@v4
         continue-on-error: true
 
+      # Stage 5 (Fallback): Publish to gh-pages Branch
       - name: Stage 5 (Fallback): Publish to gh-pages Branch
-        if: always() && steps.deployment.outcome != 'success'
+        if: always()
         uses: peaceiris/actions-gh-pages@v3
         continue-on-error: true
         with:
@@ -93,7 +87,7 @@ jobs:
       # Stage 6: Wait for Deployment
       - name: Stage 6: Wait for Live Deployment Propagation
         run: |
-          echo "Waiting 15 seconds for GitHub Pages DNS & CDN propagation..."
+          echo "Waiting 15 seconds for propagation..."
           sleep 15
 
       # Stage 7: Deployment Verification
