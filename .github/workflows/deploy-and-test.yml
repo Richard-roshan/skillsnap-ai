@@ -23,9 +23,6 @@ env:
 
 jobs:
   build-deploy-test:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       # Stage 1: Repository Checkout
@@ -61,7 +58,7 @@ jobs:
           python -m py_compile automation/utils/html_reporter.py
           python -m py_compile automation/utils/github_summary.py
 
-      # Stage 5: Deploy to GitHub Pages (Dual-strategy for 100% reliability)
+      # Stage 5: Deploy to GitHub Pages
       - name: Setup Pages
         uses: actions/configure-pages@v5
         continue-on-error: true
@@ -79,7 +76,7 @@ jobs:
 
       - name: Stage 5 (Fallback): Publish to gh-pages Branch
         if: steps.deployment.outcome != 'success'
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
