@@ -484,8 +484,14 @@ async function sendChatMessage() {
 
   if (!replyText) {
     const lower = text.toLowerCase();
-    if (/\b(hello|hi|hey|greetings)\b/.test(lower)) {
-      replyText = "Hello! I am SkillSnap AI Assistant. I can guide your technical learning, optimize your ATS resume score, or help you practice live mock interviews. What would you like to explore today?";
+    if (/\b(potta|machan|bro|dude|buddy|friend|mate|fam)\b/.test(lower)) {
+      replyText = "Hey there, my friend! 👋 I'm doing great. How's your day going? How can I help you with your learning, coding, or career goals today?";
+    } else if (/\b(saptiya|eaten|lunch|dinner|food|breakfast|snack)\b/.test(lower)) {
+      replyText = "Haha, I'm an AI so I feed on data and code! 🤖⚡ But I hope you had a great meal! What are we working on or learning today?";
+    } else if (/\b(hello|hi|hey|hola|namaste|vanakkam|greetings|wassup|sup|howdy)\b/.test(lower)) {
+      replyText = "Hello! 👋 I'm your SkillSnap AI Assistant. I can guide your technical learning, optimize your ATS resume score, or help you practice live mock interviews. What would you like to explore today?";
+    } else if (/\b(how are you|hru|how r u|doing well|how is it going)\b/.test(lower)) {
+      replyText = "I'm doing fantastic, thank you for asking! 🚀 Ready to help you build great projects and crush your career targets. How are you doing today?";
     } else if (/\b(resume|ats|cv|builder|score)\b/.test(lower)) {
       replyText = "To boost your ATS resume score above 90%:\n1. Quantify achievements with metrics (e.g. 'Improved API response time by 40%').\n2. Include key frameworks: React, FastAPI, Flutter, SQL.\n3. Keep formatting clean. Try our AI Resume Builder tab to generate a PDF!";
     } else if (/\b(interview|mock|prep|question|star)\b/.test(lower)) {
@@ -499,7 +505,7 @@ async function sendChatMessage() {
     } else if (/\b(course|learn|skill|study|roadmap|career|job)\b/.test(lower)) {
       replyText = "Based on market demand:\n1. Master Web Architecture (React & CSS)\n2. High-Speed APIs (Python & SQL)\n3. Cross-Platform Mobile (Flutter)\nExplore our interactive My Courses and Skill Assessment tabs to level up!";
     } else {
-      replyText = `Regarding your query "${text}": SkillSnap AI recommends breaking this down into 3 actionable steps:\n1. Review targeted learning modules in My Courses.\n2. Complete a practice skill assessment.\n3. Build a project artifact to highlight on your ATS resume. Would you like a personalized roadmap for this topic?`;
+      replyText = `Thanks for asking about "${text}"! 💡 SkillSnap AI recommends breaking this down into 3 actionable steps:\n1. Review targeted learning modules in My Courses.\n2. Complete a practice skill assessment.\n3. Build a project artifact to highlight on your ATS resume. What specific question do you have about this topic?`;
     }
   }
 

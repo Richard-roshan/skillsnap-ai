@@ -507,29 +507,30 @@ class ChatRequest(BaseModel):
 def ai_chat_assistant(request: ChatRequest):
     msg = request.message.strip().lower()
     
-    if any(k in msg for k in ['hello', 'hi', 'hey', 'greetings', 'who are you']):
-        reply = "Hello! I am SkillSnap AI Assistant. I can help you optimize your ATS resume, prepare for mock technical interviews, guide your full-stack career roadmap, or suggest skill-building courses. What would you like to focus on today?"
+    # Informal / Multi-lingual / Colloquial Phrases
+    if any(k in msg for k in ['potta', 'machan', 'bro', 'dude', 'buddy', 'friend', 'mate', 'fam']):
+        reply = "Hey there, my friend! 👋 I'm doing great. How's your day going? How can I help you with your learning, coding, or career goals today?"
     
+    elif any(k in msg for k in ['saptiya', 'eaten', 'lunch', 'dinner', 'food', 'breakfast', 'snack']):
+        reply = "Haha, I'm an AI so I feed on data and code! 🤖⚡ But I hope you had a great meal! What are we working on or learning today?"
+
+    elif any(k in msg for k in ['hello', 'hi', 'hey', 'hola', 'namaste', 'vanakkam', 'greetings', 'wassup', 'sup', 'howdy']):
+        reply = "Hello! 👋 I'm your SkillSnap AI Assistant. I can help you optimize your ATS resume, prepare for mock technical interviews, guide your career roadmap, or suggest skill-building courses. What would you like to focus on today?"
+
+    elif any(k in msg for k in ['how are you', 'hru', 'how r u', 'doing well', 'how is it going']):
+        reply = "I'm doing fantastic, thank you for asking! 🚀 Ready to help you build great projects and crush your career targets. How are you doing today?"
+
     elif any(k in msg for k in ['resume', 'ats', 'cv', 'builder', 'score']):
-        reply = "To maximize your ATS resume score above 90%:\n1. Quantify achievements with metrics (e.g. 'Improved API throughput by 35%').\n2. Include core technical keywords matching target job descriptions (e.g. React, FastAPI, Flutter, SQL, Docker).\n3. Use clean single-column layout formatting. You can use our AI Resume Builder tab to generate a PDF or analyze your current ATS score!"
-        
+        reply = "To maximize your ATS resume score above 90%:\n1. Quantify achievements with metrics (e.g. 'Improved API throughput by 35%').\n2. Include core technical keywords (React, FastAPI, Flutter, SQL, Docker).\n3. Use clean layout formatting. Try our AI Resume Builder tab to generate a PDF!"
+
     elif any(k in msg for k in ['interview', 'question', 'prep', 'mock', 'behavioral', 'star']):
-        reply = "For technical & behavioral interviews:\n1. Use the STAR method (Situation, Task, Action, Result) for behavioral questions.\n2. For coding & system design, articulate your trade-offs clearly (time vs. space complexity, Caching vs. Consistency).\n3. Practice in our AI Mock Interview tab to record answers and receive real-time AI evaluations!"
+        reply = "For technical & behavioral interviews:\n1. Use the STAR method (Situation, Task, Action, Result).\n2. For coding & system design, articulate trade-offs clearly.\n3. Practice in our AI Mock Interview tab for real-time evaluations!"
 
-    elif any(k in msg for k in ['react', 'javascript', 'js', 'frontend', 'redux', 'hook']):
-        reply = "In modern React development:\n• Use Functional Components with hooks (useState, useEffect, useCallback).\n• Minimize unnecessary re-renders by memoizing expensive calculations with useMemo.\n• Keep global state clean using Context API or Zustand. Check out our Full Stack Masterclass for hands-on React labs!"
-
-    elif any(k in msg for k in ['flutter', 'dart', 'mobile', 'android', 'ios', 'widget']):
-        reply = "Flutter Best Practices:\n• Prefer const constructors to reduce widget rebuild overhead.\n• Use reactive state managers like ValueNotifier, Provider, or Riverpod.\n• Handle network exceptions with fallback models for 100% offline resilience."
-
-    elif any(k in msg for k in ['python', 'fastapi', 'backend', 'sql', 'database', 'api']):
-        reply = "FastAPI & Backend High Performance:\n• Use async route handlers for I/O bound tasks (async def).\n• Implement connection pooling and index your SQL queries for <50ms response times.\n• Enable CORS, Pydantic data validation schemas, and WebSocket streaming for real-time sync."
-
-    elif any(k in msg for k in ['course', 'learn', 'skill', 'study', 'roadmap', 'career', 'job']):
-        reply = "Based on market demand for Full Stack & AI Engineers:\n1. Master Web Foundations (HTML/CSS/JS/React).\n2. Build High-Throughput APIs (Python FastAPI & SQL).\n3. Expand to Mobile (Flutter).\nExplore our interactive My Courses and Skill Growth tabs to track your progress live!"
+    elif any(k in msg for k in ['react', 'javascript', 'js', 'frontend', 'redux', 'hook', 'flutter', 'python', 'fastapi', 'sql', 'code', 'coding']):
+        reply = f"Great technical query about '{request.message}'! Best practices:\n1. Keep clean modular architecture and separate concerns.\n2. Write automated tests and handle offline/network exceptions.\n3. Explore our 'My Courses' tab for hands-on interactive modules!"
 
     else:
-        reply = f"Great question regarding '{request.message}'! SkillSnap AI recommends breaking this down into actionable milestones: 1) Review relevant course modules, 2) Test your knowledge in the Skill Assessment section, and 3) Build a project project artifact to highlight on your resume. Would you like a personalized study plan for this topic?"
+        reply = f"Thanks for asking about '{request.message}'! 💡 SkillSnap AI recommends breaking this down into 3 steps: 1) Define your goal for '{request.message}', 2) Review targeted learning modules, and 3) Build a project artifact to showcase on your ATS resume."
 
     return {
         "reply": reply,
