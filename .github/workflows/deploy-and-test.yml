@@ -64,25 +64,22 @@ jobs:
       # Stage 5: Deploy to GitHub Pages
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        continue-on-error: true
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
-        continue-on-error: true
         with:
-          path: './dist'
+          path: '.'
 
       - name: Stage 5: Deploy to GitHub Pages (Actions Deploy)
         id: deployment
         uses: actions/deploy-pages@v4
-        continue-on-error: true
 
       - name: Stage 5 (Fallback): Publish to gh-pages Branch
-        if: steps.deployment.outcome != 'success'
+        if: always() && steps.deployment.outcome != 'success'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          publish_dir: .
 
       # Stage 6: Wait for Deployment
       - name: Stage 6: Wait for Live Deployment Propagation
