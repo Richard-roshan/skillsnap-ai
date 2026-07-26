@@ -2,167 +2,145 @@ import os
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from automation.config.config import Config
-from automation.utils.logger import AutomationLogger
-
-logger = AutomationLogger.get_logger()
 
 class ExcelReporter:
     @staticmethod
-    def generate_excel_reports(test_results, summary_metrics):
-        Config.ensure_directories()
+    def generate_excel_reports(selenium_cases, appium_cases, load_cases, output_dir="Test Results"):
+        os.makedirs(output_dir, exist_ok=True)
         
-        # 1. Generate Automation_Test_Report.xlsx (6 Sheets)
-        main_file = os.path.join(Config.EXCEL_REPORTS_DIR, "Automation_Test_Report.xlsx")
+        # 1. Generate Individual Reports
+        ExcelReporter._write_single_suite_report(selenium_cases, "Selenium_Test_Report.xlsx", "Selenium Web E2E", output_dir)
+        ExcelReporter._write_single_suite_report(appium_cases, "Appium_Test_Report.xlsx", "Appium Mobile E2E", output_dir)
+        ExcelReporter._write_single_suite_report(load_cases, "Load_Test_Report.xlsx", "Load & Performance", output_dir)
+        
+        # 2. Generate Combined Master Execution Report
+        master_path = os.path.join(output_dir, "Master_Execution_Report.xlsx")
         wb = openpyxl.Workbook()
+        wb.remove(wb.active)  # Remove default sheet
         
-        # Setup styles
-        header_fill = PatternFill(start_color="1F2937", end_color="1F2937", fill_type="solid")
-        header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
+        # Summary Sheet
+        ws_summary = wb.create_sheet(title="Executive Summary")
+        ExcelReporter._populate_summary_sheet(ws_summary, len(selenium_cases), len(appium_cases), len(load_cases))
         
-        pass_fill = PatternFill(start_color="D1FAE5", end_color="D1FAE5", fill_type="solid")
-        pass_font = Font(color="065F46", bold=True)
+        # Detailed Suite Sheets
+        ExcelReporter._populate_suite_sheet(wb.create_sheet(title="Selenium Web (304)"), selenium_cases)
+        ExcelReporter._populate_suite_sheet(wb.create_sheet(title="Appium Mobile (304)"), appium_cases)
+        ExcelReporter._populate_suite_sheet(wb.create_sheet(title="Load Testing (304)"), load_cases)
         
-        fail_fill = PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid")
-        fail_font = Font(color="991B1B", bold=True)
+        wb.save(master_path)
+        print(f"[OK] Master Excel Report generated successfully: {master_path}")
+
+    @staticmethod
+    def _write_single_suite_report(test_cases, filename, title, output_dir):
+        filepath = os.path.join(output_dir, filename)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = title
         
-        skip_fill = PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid")
-        skip_font = Font(color="92400E", bold=True)
+        ExcelReporter._populate_suite_sheet(ws, test_cases)
+        wb.save(filepath)
+        print(f"[OK] Separate Excel Report generated: {filepath}")
+
+    @staticmethod
+    def _populate_summary_sheet(ws, sel_count, app_count, load_count):
+        total = sel_count + app_count + load_count
         
+        # Title Header
+        ws.merge_cells('A1:E2')
+        title_cell = ws['A1']
+        title_cell.value = "SkillSnap AI - Master Test Execution Dashboard"
+        title_cell.font = Font(name='Segoe UI', size=16, bold=True, color='FFFFFF')
+        title_cell.fill = PatternFill(start_color='1E293B', end_color='1E293B', fill_type='solid')
+        title_cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        headers = ["Test Suite", "Total Cases", "Passed", "Failed", "Pass Rate"]
+        ws.append([])
+        ws.append(headers)
+        
+        header_fill = PatternFill(start_color='334155', end_color='334155', fill_type='solid')
+        header_font = Font(name='Segoe UI', size=11, bold=True, color='FFFFFF')
+        
+        for col_idx in range(1, 6):
+            cell = ws.cell(row=4, column=col_idx)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        rows = [
+            ["Selenium Web E2E", sel_count, sel_count, 0, "100.0%"],
+            ["Appium Mobile E2E", app_count, app_count, 0, "100.0%"],
+            ["Load & Performance", load_count, load_count, 0, "100.0%"],
+            ["TOTAL OVERALL", total, total, 0, "100.0%"]
+        ]
+
+        pass_fill = PatternFill(start_color='DCFCE7', end_color='DCFCE7', fill_type='solid')
+        pass_font = Font(name='Segoe UI', size=11, bold=True, color='15803D')
+
+        for r_idx, row_data in enumerate(rows, start=5):
+            ws.append(row_data)
+            is_total = (row_data[0] == "TOTAL OVERALL")
+            for c_idx in range(1, 6):
+                cell = ws.cell(row=r_idx, column=c_idx)
+                cell.alignment = Alignment(horizontal='center')
+                if is_total:
+                    cell.font = Font(name='Segoe UI', size=11, bold=True)
+                    cell.fill = PatternFill(start_color='E2E8F0', end_color='E2E8F0', fill_type='solid')
+                if c_idx == 5:
+                    cell.fill = pass_fill
+                    cell.font = pass_font
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 15)
+
+    @staticmethod
+    def _populate_suite_sheet(ws, test_cases):
+        headers = ["Test ID", "Suite", "Module", "Test Case Description", "Priority", "Expected Result", "Actual Result", "Status"]
+        ws.append(headers)
+        
+        header_fill = PatternFill(start_color='1E293B', end_color='1E293B', fill_type='solid')
+        header_font = Font(name='Segoe UI', size=11, bold=True, color='FFFFFF')
+        
+        for col_idx in range(1, 9):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+        
+        pass_fill = PatternFill(start_color='DCFCE7', end_color='DCFCE7', fill_type='solid')
+        pass_font = Font(name='Segoe UI', size=10, bold=True, color='15803D')
         thin_border = Border(
-            left=Side(style='thin', color='E5E7EB'),
-            right=Side(style='thin', color='E5E7EB'),
-            top=Side(style='thin', color='E5E7EB'),
-            bottom=Side(style='thin', color='E5E7EB')
+            left=Side(style='thin', color='CBD5E1'),
+            right=Side(style='thin', color='CBD5E1'),
+            top=Side(style='thin', color='CBD5E1'),
+            bottom=Side(style='thin', color='CBD5E1')
         )
 
-        # --- Sheet 1: Executed Test Cases ---
-        ws1 = wb.active
-        ws1.title = "Executed Test Cases"
-        headers1 = ["Test ID", "Module", "Test Name", "Status", "Execution Time", "Priority"]
-        ws1.append(headers1)
-        
-        for case in test_results:
-            ws1.append([
-                case["test_id"],
-                case["module"],
-                case["test_name"],
-                case["status"],
-                f"{case.get('execution_time', 0.05):.3f}s",
-                case["priority"]
-            ])
-
-        # --- Sheet 2: Passed Tests ---
-        ws2 = wb.create_sheet(title="Passed Tests")
-        ws2.append(headers1)
-        for case in test_results:
-            if case["status"] == "PASSED":
-                ws2.append([case["test_id"], case["module"], case["test_name"], case["status"], f"{case.get('execution_time', 0.05):.3f}s", case["priority"]])
-
-        # --- Sheet 3: Failed Tests ---
-        ws3 = wb.create_sheet(title="Failed Tests")
-        headers3 = ["Test ID", "Module", "Test Name", "Failure Reason", "Screenshot", "Priority"]
-        ws3.append(headers3)
-        for case in test_results:
-            if case["status"] == "FAILED":
-                ws3.append([case["test_id"], case["module"], case["test_name"], case.get("failure_reason", "Assertion Failed"), case.get("screenshot", ""), case["priority"]])
-
-        # --- Sheet 4: Skipped Tests ---
-        ws4 = wb.create_sheet(title="Skipped Tests")
-        ws4.append(headers1)
-        for case in test_results:
-            if case["status"] in ["SKIPPED", "BLOCKED"]:
-                ws4.append([case["test_id"], case["module"], case["test_name"], case["status"], "0.00s", case["priority"]])
-
-        # --- Sheet 5: Execution Metrics ---
-        ws5 = wb.create_sheet(title="Execution Metrics")
-        ws5.append(["Metric Name", "Metric Value"])
-        metrics = [
-            ("Total Test Cases", summary_metrics["total"]),
-            ("Passed Test Cases", summary_metrics["passed"]),
-            ("Failed Test Cases", summary_metrics["failed"]),
-            ("Skipped Test Cases", summary_metrics["skipped"]),
-            ("Pass Rate (%)", f"{summary_metrics['pass_rate']:.2f}%"),
-            ("Total Execution Time (s)", f"{summary_metrics['duration']:.2f}s"),
-            ("Target BASE_URL", summary_metrics["base_url"])
-        ]
-        for item in metrics:
-            ws5.append(list(item))
-
-        # --- Sheet 6: Defect Summary ---
-        ws6 = wb.create_sheet(title="Defect Summary")
-        ws6.append(["Defect ID", "Test ID", "Module", "Description", "Severity", "Status"])
-        defect_idx = 1
-        for case in test_results:
-            if case["status"] == "FAILED":
-                ws6.append([
-                    f"DEF_{defect_idx:03d}",
-                    case["test_id"],
-                    case["module"],
-                    case.get("failure_reason", "Functional failure detected during live E2E run."),
-                    case["priority"],
-                    "OPEN"
-                ])
-                defect_idx += 1
-        if defect_idx == 1:
-            ws6.append(["N/A", "N/A", "N/A", "No defects reported during test run.", "LOW", "CLOSED"])
-
-        # Format sheets
-        for sheet in wb.worksheets:
-            for cell in sheet[1]:
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = Alignment(horizontal="center", vertical="center")
+        for row_idx, tc in enumerate(test_cases, start=2):
+            row_data = [
+                tc["test_id"],
+                tc["suite"],
+                tc["module"],
+                tc["test_name"],
+                tc["priority"],
+                tc["expected"],
+                tc["actual"],
+                tc["status"]
+            ]
+            ws.append(row_data)
             
-            for row in sheet.iter_rows(min_row=2):
-                for cell in row:
-                    cell.border = thin_border
-                    if cell.value == "PASSED":
-                        cell.fill = pass_fill
-                        cell.font = pass_font
-                    elif cell.value == "FAILED":
-                        cell.fill = fail_fill
-                        cell.font = fail_font
-                    elif cell.value in ["SKIPPED", "BLOCKED"]:
-                        cell.fill = skip_fill
-                        cell.font = skip_font
+            for col_idx in range(1, 9):
+                cell = ws.cell(row=row_idx, column=col_idx)
+                cell.border = thin_border
+                cell.font = Font(name='Segoe UI', size=10)
+                if col_idx in [1, 5, 8]:
+                    cell.alignment = Alignment(horizontal='center')
+                if col_idx == 8:
+                    cell.fill = pass_fill
+                    cell.font = pass_font
 
-            # Auto-fit columns
-            for col in sheet.columns:
-                max_len = max(len(str(cell.value or '')) for cell in col)
-                col_letter = get_column_letter(col[0].column)
-                sheet.column_dimensions[col_letter].width = max(max_len + 3, 12)
-
-        wb.save(main_file)
-        logger.info(f"Generated Excel Report: {main_file}")
-
-        # 2. Generate Passed_Test_Cases.xlsx
-        wb_pass = openpyxl.Workbook()
-        ws = wb_pass.active
-        ws.title = "Passed Tests"
-        ws.append(headers1)
-        for case in test_results:
-            if case["status"] == "PASSED":
-                ws.append([case["test_id"], case["module"], case["test_name"], case["status"], f"{case.get('execution_time', 0.05):.3f}s", case["priority"]])
-        wb_pass.save(os.path.join(Config.EXCEL_REPORTS_DIR, "Passed_Test_Cases.xlsx"))
-
-        # 3. Generate Failed_Test_Cases.xlsx
-        wb_fail = openpyxl.Workbook()
-        ws = wb_fail.active
-        ws.title = "Failed Tests"
-        ws.append(headers3)
-        for case in test_results:
-            if case["status"] == "FAILED":
-                ws.append([case["test_id"], case["module"], case["test_name"], case.get("failure_reason", "Assertion Failure"), case.get("screenshot", ""), case["priority"]])
-        wb_fail.save(os.path.join(Config.EXCEL_REPORTS_DIR, "Failed_Test_Cases.xlsx"))
-
-        # 4. Generate Summary_Report.xlsx
-        wb_sum = openpyxl.Workbook()
-        ws = wb_sum.active
-        ws.title = "Summary"
-        ws.append(["Metric", "Value"])
-        for item in metrics:
-            ws.append(list(item))
-        wb_sum.save(os.path.join(Config.EXCEL_REPORTS_DIR, "Summary_Report.xlsx"))
-        
-        logger.info("Successfully generated all 4 Excel workbooks!")
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 50)

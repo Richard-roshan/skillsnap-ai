@@ -24,14 +24,63 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Step 3: Install & Compile Python Backend
-      - name: Install Dependencies & Validate Backend
+      # Step 3: Install Dependencies
+      - name: Install Dependencies & Framework Packages
         run: |
           python -m pip install --upgrade pip
-          pip install fastapi pydantic mysql-connector-python requests beautifulsoup4
+          pip install fastapi pydantic mysql-connector-python requests beautifulsoup4 openpyxl selenium
           python -m py_compile main.py
 
-      # Step 4: Bundle Web Frontend
+      # Step 4: Execute 912 Test Cases (Selenium 304, Appium 304, Load 304)
+      - name: Execute Automated Test Suites (Selenium, Appium, Load)
+        run: |
+          PYTHONPATH=. python automation/utils/suite_runner.py
+
+      # Step 5: Publish Step Summary Table in GitHub Actions UI
+      - name: Publish Tabular Step Summary Report
+        if: always()
+        run: |
+          if [ -f "Test Results/Summary/summary.md" ]; then
+            cat "Test Results/Summary/summary.md" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Step 6: Upload Downloadable Excel Artifact - Selenium Test Report
+      - name: Upload Artifact - Selenium Web Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Selenium_Test_Report
+          path: Test Results/Selenium_Test_Report.xlsx
+          if-no-files-found: ignore
+
+      # Step 7: Upload Downloadable Excel Artifact - Appium Test Report
+      - name: Upload Artifact - Appium Mobile Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Appium_Test_Report
+          path: Test Results/Appium_Test_Report.xlsx
+          if-no-files-found: ignore
+
+      # Step 8: Upload Downloadable Excel Artifact - Load Test Report
+      - name: Upload Artifact - Load Performance Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Load_Test_Report
+          path: Test Results/Load_Test_Report.xlsx
+          if-no-files-found: ignore
+
+      # Step 9: Upload Downloadable Excel Artifact - Master Combined Report
+      - name: Upload Artifact - Master Combined Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Master_Execution_Report
+          path: Test Results/Master_Execution_Report.xlsx
+          if-no-files-found: ignore
+
+      # Step 10: Bundle Web Frontend
       - name: Prepare Web Bundle
         run: |
           echo "Bundling static web assets..."
@@ -39,25 +88,25 @@ jobs:
           cp index.html app.js styles.css dist/
           if [ -d "assets" ]; then cp -r assets dist/; fi
 
-      # Step 5: Configure Pages
+      # Step 11: Configure Pages
       - name: Setup Pages
         uses: actions/configure-pages@v5
         continue-on-error: true
 
-      # Step 6: Upload Pages Artifact
+      # Step 12: Upload Pages Artifact
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         continue-on-error: true
         with:
           path: './dist'
 
-      # Step 7: Deploy Pages (Actions Deploy)
+      # Step 13: Deploy Pages (Actions Deploy)
       - name: Deploy to GitHub Pages (Actions Deploy)
         id: deployment
         uses: actions/deploy-pages@v4
         continue-on-error: true
 
-      # Step 8: Publish Fallback (gh-pages Branch)
+      # Step 14: Publish Fallback (gh-pages Branch)
       - name: Publish to gh-pages Branch
         if: always()
         uses: peaceiris/actions-gh-pages@v3
