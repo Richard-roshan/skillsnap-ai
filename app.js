@@ -379,14 +379,19 @@ const interviewQuestions = {
 let currentRole = 'Full Stack Engineer';
 let currentQuestionIndex = 0;
 
-function selectInterviewRole(roleName, category) {
+function selectInterviewRole(roleName, category, evt) {
   currentRole = roleName;
   currentQuestionIndex = 0;
 
   document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  
+  const targetElement = (evt && evt.currentTarget) ? evt.currentTarget : (window.event ? window.event.currentTarget : null);
+  if (targetElement) {
+    targetElement.classList.add('active');
+  }
 
-  document.getElementById('interview-role-badge').innerText = roleName;
+  const badge = document.getElementById('interview-role-badge');
+  if (badge) badge.innerText = roleName;
   updateQuestionText();
 }
 
