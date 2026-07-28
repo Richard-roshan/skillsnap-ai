@@ -30,8 +30,8 @@ function initWebSocketSync() {
       try {
         const payload = JSON.parse(event.data);
         console.log('⚡ Real-time Event Received from Mobile:', payload);
-        if (payload.event === 'MOBILE_UPDATE' || payload.event === 'DATA_UPDATED' || payload.event === 'PROFILE_UPDATE' || payload.event === 'SKILL_UPDATE' || payload.event === 'LESSON_COMPLETE') {
-          handleIncomingMobileSync(payload);
+        if (payload.event === 'MOBILE_UPDATE' || payload.event === 'DATA_UPDATED') {
+          showToast(`📱 Live Sync: ${payload.data.message || 'Data updated on Mobile!'}`, 'success');
         }
       } catch (err) {
         console.warn('Failed to parse WebSocket message', err);
@@ -74,61 +74,6 @@ function emitLiveSyncUpdate(eventType, data) {
     }).catch(err => console.warn('Sync broadcast fallback error:', err));
   }
 }
-
-// --- Live Reactive Sync Engine (Mobile -> Website) ---
-function handleIncomingMobileSync(payload) {
-  const data = payload.data || {};
-  const action = data.action || payload.event || '';
-
-  // 1. Profile & User Info Sync
-  if (data.full_name || action === 'PROFILE_UPDATE') {
-    const newName = data.full_name || data.name;
-    if (newName) {
-      document.querySelectorAll('.user-name').forEach(el => el.innerText = newName);
-      showToast(`📱 Live Mobile Sync: User profile updated to "${newName}"`, 'success');
-    }
-  }
-
-  // 2. Skill Progress Sync
-  if (data.skill_name || action === 'SKILL_UPDATE') {
-    const val = data.progress_percent || data.value;
-    if (val !== undefined) {
-      const skillValEl = document.getElementById('skill-val-mgmt');
-      const skillBarEl = document.getElementById('skill-bar-mgmt');
-      if (skillValEl) skillValEl.innerText = `${val}%`;
-      if (skillBarEl) skillBarEl.style.width = `${val}%`;
-      showToast(`📱 Live Mobile Sync: Skill "${data.skill_name || 'Management'}" updated to ${val}%`, 'success');
-    }
-  }
-
-  // 3. Lesson Completion Sync
-  if (action === 'LESSON_COMPLETE' || action === 'COURSE_UPDATE' || data.lessons_completed) {
-    const lessonValEl = document.getElementById('stat-lessons-val');
-    if (lessonValEl) {
-      const current = parseInt(lessonValEl.innerText) || 10;
-      lessonValEl.innerText = data.lessons_completed || (current + 1);
-    }
-    showToast(`📱 Live Mobile Sync: ${data.message || 'Lesson progress updated on mobile!'}`, 'success');
-  }
-
-  // 4. ATS Resume Score Sync
-  if (action === 'RESUME_UPDATE' || data.ats_score) {
-    const score = data.ats_score;
-    if (score !== undefined) {
-      const badge = document.getElementById('overall-ats-badge');
-      const scoreATS = document.getElementById('score-ats');
-      if (badge) badge.innerText = `Score: ${score}/100`;
-      if (scoreATS) scoreATS.innerText = `${score}%`;
-      showToast(`📱 Live Mobile Sync: ATS Resume score updated to ${score}/100`, 'success');
-    }
-  }
-
-  // 5. General Mobile Update Toast
-  if (!action && data.message) {
-    showToast(`📱 Live Mobile Sync: ${data.message}`, 'info');
-  }
-}
-
 
 // --- Toast Notification System ---
 function showToast(message, type = 'info') {
@@ -434,19 +379,14 @@ const interviewQuestions = {
 let currentRole = 'Full Stack Engineer';
 let currentQuestionIndex = 0;
 
-function selectInterviewRole(roleName, category, evt) {
+function selectInterviewRole(roleName, category) {
   currentRole = roleName;
   currentQuestionIndex = 0;
 
   document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-  
-  const targetElement = (evt && evt.currentTarget) ? evt.currentTarget : (window.event ? window.event.currentTarget : null);
-  if (targetElement) {
-    targetElement.classList.add('active');
-  }
+  event.currentTarget.classList.add('active');
 
-  const badge = document.getElementById('interview-role-badge');
-  if (badge) badge.innerText = roleName;
+  document.getElementById('interview-role-badge').innerText = roleName;
   updateQuestionText();
 }
 
@@ -494,16 +434,13 @@ function toggleChatModal() {
   }
 }
 
-async function sendChatMessage() {
+function sendChatMessage() {
   const chatInput = document.getElementById('chat-input');
-  if (!chatInput) return;
   const text = chatInput.value.trim();
   if (!text) return;
 
   const container = document.getElementById('chat-messages-container');
-  if (!container) return;
 
-  // Append user message
   const userMsg = document.createElement('div');
   userMsg.className = 'msg user';
   userMsg.innerText = text;
@@ -512,72 +449,21 @@ async function sendChatMessage() {
   chatInput.value = '';
   container.scrollTop = container.scrollHeight;
 
-  // Create AI Message Box with Typing Indicator
-  const aiMsg = document.createElement('div');
-  aiMsg.className = 'msg ai';
-  aiMsg.innerHTML = '<span class="typing-indicator">● ● ● Thinking...</span>';
-  container.appendChild(aiMsg);
-  container.scrollTop = container.scrollHeight;
-
-  // Fetch AI Response (Backend or Intelligent Local NLP Engine)
-  let replyText = "";
-  const apiHost = window.location.hostname || 'localhost';
-
-  try {
-    const res = await fetch(`http://${apiHost}:8000/api/ai/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, user_id: CURRENT_USER_ID })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      replyText = data.reply;
+  setTimeout(() => {
+    const aiMsg = document.createElement('div');
+    aiMsg.className = 'msg ai';
+    
+    let reply = "That's a great question! SkillSnap AI recommends taking the Full Stack Developer Masterclass and practicing ATS optimization in the Mentorship tab.";
+    if (text.toLowerCase().includes('resume') || text.toLowerCase().includes('ats') || text.toLowerCase().includes('builder')) {
+      reply = "You can use our brand-new AI Resume Builder tab to generate a professional PDF resume or analyze your ATS score in seconds!";
+    } else if (text.toLowerCase().includes('course') || text.toLowerCase().includes('skill')) {
+      reply = "Based on your current skill profile (UI/UX 90%, Management 30%), I recommend expanding into API architecture to become a Full Stack Product Lead.";
     }
-  } catch (err) {
-    // Fallback to intelligent local NLP answer generator
-  }
 
-  if (!replyText) {
-    const lower = text.toLowerCase();
-    if (/\b(potta|machan|bro|dude|buddy|friend|mate|fam)\b/.test(lower)) {
-      replyText = "Hey there, my friend! 👋 I'm doing great. How's your day going? How can I help you with your learning, coding, or career goals today?";
-    } else if (/\b(saptiya|eaten|lunch|dinner|food|breakfast|snack)\b/.test(lower)) {
-      replyText = "Haha, I'm an AI so I feed on data and code! 🤖⚡ But I hope you had a great meal! What are we working on or learning today?";
-    } else if (/\b(hello|hi|hey|hola|namaste|vanakkam|greetings|wassup|sup|howdy)\b/.test(lower)) {
-      replyText = "Hello! 👋 I'm your SkillSnap AI Assistant. I can guide your technical learning, optimize your ATS resume score, or help you practice live mock interviews. What would you like to explore today?";
-    } else if (/\b(how are you|hru|how r u|doing well|how is it going)\b/.test(lower)) {
-      replyText = "I'm doing fantastic, thank you for asking! 🚀 Ready to help you build great projects and crush your career targets. How are you doing today?";
-    } else if (/\b(resume|ats|cv|builder|score)\b/.test(lower)) {
-      replyText = "To boost your ATS resume score above 90%:\n1. Quantify achievements with metrics (e.g. 'Improved API response time by 40%').\n2. Include key frameworks: React, FastAPI, Flutter, SQL.\n3. Keep formatting clean. Try our AI Resume Builder tab to generate a PDF!";
-    } else if (/\b(interview|mock|prep|question|star)\b/.test(lower)) {
-      replyText = "For tech & product interviews:\n1. Use the STAR framework (Situation, Task, Action, Result).\n2. For system design & coding, discuss trade-offs explicitly.\n3. Try our AI Mock Interview Studio tab for instant automated feedback!";
-    } else if (/\b(react|javascript|js|frontend|hook|node)\b/.test(lower)) {
-      replyText = "In modern React development:\n• Use Functional Components with hooks (`useState`, `useEffect`).\n• Optimize performance with `useMemo` & `useCallback` to avoid re-renders.\n• Check out our Full Stack Masterclass course!";
-    } else if (/\b(flutter|dart|mobile|android|ios)\b/.test(lower)) {
-      replyText = "Flutter Development Tips:\n• Prefer `const` widgets to optimize render speed.\n• Use reactive state managers (ValueNotifier, Provider).\n• Implement offline cache fallbacks for zero app crashes!";
-    } else if (/\b(python|fastapi|backend|sql|database|api)\b/.test(lower)) {
-      replyText = "Backend Architecture Best Practices:\n• Use async handlers for high concurrency.\n• Index SQL columns and use connection pooling for <50ms response times.\n• Stream real-time updates via WebSockets.";
-    } else if (/\b(course|learn|skill|study|roadmap|career|job)\b/.test(lower)) {
-      replyText = "Based on market demand:\n1. Master Web Architecture (React & CSS)\n2. High-Speed APIs (Python & SQL)\n3. Cross-Platform Mobile (Flutter)\nExplore our interactive My Courses and Skill Assessment tabs to level up!";
-    } else {
-      replyText = `Thanks for asking about "${text}"! 💡 SkillSnap AI recommends breaking this down into 3 actionable steps:\n1. Review targeted learning modules in My Courses.\n2. Complete a practice skill assessment.\n3. Build a project artifact to highlight on your ATS resume. What specific question do you have about this topic?`;
-    }
-  }
-
-  // Live Stream / Typing Animation Effect (Word-by-word feeding)
-  aiMsg.innerText = '';
-  const words = replyText.split(' ');
-  let wIndex = 0;
-
-  const streamInterval = setInterval(() => {
-    if (wIndex < words.length) {
-      aiMsg.innerText += (wIndex === 0 ? '' : ' ') + words[wIndex];
-      wIndex++;
-      container.scrollTop = container.scrollHeight;
-    } else {
-      clearInterval(streamInterval);
-    }
-  }, 40); // Smooth live feeding speed
+    aiMsg.innerText = reply;
+    container.appendChild(aiMsg);
+    container.scrollTop = container.scrollHeight;
+  }, 600);
 }
 
 // --- FastAPI Backend Integration Test ---
