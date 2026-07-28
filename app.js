@@ -353,13 +353,13 @@ function updateVideoTimeTracker() {
 function openCoursePlayer(courseId) {
   switchTab('courses');
   if (courseId === 1) {
-    selectLesson(1, '1. Introduction to Full Stack Architecture', '12:30', 'Learn modern architecture patterns and client-server setups.', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+    selectLesson(1, '1. Introduction to Full Stack Architecture', '12:30', 'Learn modern architecture patterns and client-server setups.', 'Ke90Tje7VS0');
   } else if (courseId === 2) {
-    selectLesson(2, '2. Database Modeling & Fast APIs', '18:45', 'Design relational schemas, SQL queries, and FastAPI endpoints.', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+    selectLesson(2, '2. Database Modeling & Fast APIs', '18:45', 'Design relational schemas, SQL queries, and FastAPI endpoints.', 'SqcY0GlETPk');
   }
 }
 
-function selectLesson(index, title, duration, description, videoUrl) {
+function selectLesson(index, title, duration, description, videoId) {
   document.querySelectorAll('.lesson-item').forEach((item, idx) => {
     if (idx === index - 1) {
       item.classList.add('active');
@@ -373,21 +373,19 @@ function selectLesson(index, title, duration, description, videoUrl) {
     }
   });
 
-  const video = document.getElementById('main-course-video');
+  const iframe = document.getElementById('main-course-iframe');
   const playerTitle = document.getElementById('player-title');
   const playerTime = document.getElementById('player-time');
   const lessonHeader = document.getElementById('lesson-header-title');
   const lessonDesc = document.getElementById('lesson-desc');
 
   if (playerTitle) playerTitle.innerText = title;
-  if (playerTime) playerTime.innerText = `00:00 / ${duration}`;
+  if (playerTime) playerTime.innerText = `Duration: ${duration}`;
   if (lessonHeader) lessonHeader.innerText = title;
   if (lessonDesc) lessonDesc.innerText = description;
 
-  if (video && videoUrl) {
-    video.src = videoUrl;
-    video.load();
-    video.play().catch(err => console.log('Autoplay deferred:', err));
+  if (iframe && videoId) {
+    iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`;
   }
 
   if (window.lucide) lucide.createIcons();
