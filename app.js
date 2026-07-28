@@ -852,3 +852,11 @@ async function testBackendConnection() {
     showToast('Backend offline - fallback client engine active.', 'info');
   }
 }
+
+// --- Google Pixel 5 Viewport Device Mode Engine ---
+function togglePixel5Mode() {
+  document.body.classList.toggle('pixel-5-mode');
+  const isPixel5 = document.body.classList.contains('pixel-5-mode');
+  showToast(isPixel5 ? '📱 Google Pixel 5 Mockup Mode Enabled (393px × 851px)' : '🖥️ Full Desktop Mode Restored', 'info');
+  if (window.lucide) lucide.createIcons();
+}

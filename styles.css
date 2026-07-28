@@ -1029,3 +1029,83 @@ footer {
   border-top: 1px solid var(--border-color);
   margin-top: auto;
 }
+
+/* --- GOOGLE PIXEL 5 DEVICE FRAME MOCKUP STYLES --- */
+body.pixel-5-mode {
+  background: #060913 !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem 0;
+  overflow-y: auto;
+}
+
+body.pixel-5-mode .app-container {
+  width: 393px !important;
+  height: 851px !important;
+  max-width: 393px !important;
+  max-height: 851px !important;
+  margin: 0 auto !important;
+  border-radius: 40px !important;
+  border: 12px solid #1e293b !important;
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), 0 0 35px rgba(59, 130, 246, 0.25) !important;
+  position: relative !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Pixel 5 Camera Hole-Punch Notch */
+body.pixel-5-mode .app-container::before {
+  content: '';
+  position: sticky;
+  top: 12px;
+  left: 20px;
+  width: 14px;
+  height: 14px;
+  background: #000000;
+  border-radius: 50%;
+  z-index: 9999;
+  box-shadow: inset 0 0 3px rgba(255, 255, 255, 0.3), 0 0 2px rgba(0, 0, 0, 0.8);
+  margin-bottom: -14px;
+  pointer-events: none;
+}
+
+/* Pixel 5 Bottom Gesture Navigation Bar */
+body.pixel-5-mode .app-container::after {
+  content: '';
+  position: sticky;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  z-index: 9999;
+  pointer-events: none;
+  margin-top: auto;
+}
+
+/* Status Bar Header in Pixel 5 Mode */
+.pixel-5-status-bar {
+  display: none;
+  height: 36px;
+  background: var(--bg-main);
+  padding: 0 16px 0 42px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  user-select: none;
+  z-index: 9998;
+  flex-shrink: 0;
+}
+
+body.pixel-5-mode .pixel-5-status-bar {
+  display: flex;
+}
