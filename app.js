@@ -303,19 +303,160 @@ function analyzeResumeText() {
   showToast(`ATS Analysis Complete! Score: ${atsScore}/100`, 'success');
 }
 
-// --- Interactive Skill Assessment Quiz ---
+// --- Interactive Skill Assessment Quiz Engine ---
+const skillQuizData = [
+  {
+    category: "Management & Strategy",
+    question: "1. How do you prioritize project deliverables when technical debt competes with tight feature deadlines?",
+    options: [
+      "Use the RICE framework to weigh reach, impact, and effort against tech debt risk.",
+      "Ignore technical debt completely and only ship new user features.",
+      "Halt all feature development for 6 months to rewrite the backend codebase.",
+      "Let individual developers choose tasks randomly without team alignment."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "Full Stack Architecture",
+    question: "2. What is the primary benefit of caching GET requests with Redis or CDN edge nodes?",
+    options: [
+      "Drastically reduces database query load and decreases API latency to <20ms.",
+      "Replaces relational SQL database schemas with client local storage.",
+      "Eliminates the need for API authentication tokens.",
+      "Automatically writes unit test cases for frontend components."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "UI/UX Design Systems",
+    question: "3. Which principle ensures your application maintains high visual contrast and accessibility (WCAG compliance)?",
+    options: [
+      "Maintaining minimum 4.5:1 color contrast ratio for normal body text.",
+      "Using low-contrast light grey text on white backgrounds.",
+      "Disabling screen reader ARIA labels on interactive buttons.",
+      "Removing focus outlines from form inputs."
+    ],
+    correctIndex: 0
+  }
+];
+
+let currentQuizIndex = 0;
+let selectedQuizAnswer = null;
+let userQuizScore = 0;
+
 function startSkillQuiz() {
-  const scoreGained = Math.floor(Math.random() * 5) + 3; // 3-7% increase
-  const currentVal = parseInt(document.getElementById('skill-val-mgmt').innerText) || 30;
-  const newVal = Math.min(100, currentVal + scoreGained);
+  currentQuizIndex = 0;
+  selectedQuizAnswer = null;
+  userQuizScore = 0;
 
-  document.getElementById('skill-val-mgmt').innerText = `${newVal}%`;
-  document.getElementById('skill-bar-mgmt').style.width = `${newVal}%`;
+  const modal = document.getElementById('quiz-modal');
+  const body = document.getElementById('quiz-body');
+  const results = document.getElementById('quiz-results');
 
-  const lessonVal = parseInt(document.getElementById('stat-lessons-val').innerText) || 10;
-  document.getElementById('stat-lessons-val').innerText = lessonVal + 1;
+  if (body) body.style.display = 'block';
+  if (results) results.style.display = 'none';
 
-  showToast(`Quiz Passed! Management Skill increased by +${scoreGained}%`, 'success');
+  renderQuizQuestion();
+
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function renderQuizQuestion() {
+  const qData = skillQuizData[currentQuizIndex];
+  if (!qData) return;
+
+  selectedQuizAnswer = null;
+
+  const stepIndicator = document.getElementById('quiz-step-indicator');
+  const catBadge = document.getElementById('quiz-category-badge');
+  const qTitle = document.getElementById('quiz-question-title');
+
+  if (stepIndicator) stepIndicator.innerText = `Question ${currentQuizIndex + 1} of ${skillQuizData.length}`;
+  if (catBadge) catBadge.innerText = qData.category;
+  if (qTitle) qTitle.innerText = qData.question;
+
+  const optionsContainer = document.getElementById('quiz-options-container');
+  if (!optionsContainer) return;
+  optionsContainer.innerHTML = '';
+
+  qData.options.forEach((optText, optIdx) => {
+    const optDiv = document.createElement('div');
+    optDiv.className = 'quiz-option-item';
+    optDiv.style.cssText = 'padding:0.9rem 1rem; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-input); cursor:pointer; transition:all 0.2s ease; display:flex; align-items:center; gap:0.75rem;';
+    optDiv.innerHTML = `
+      <input type="radio" name="quiz-opt" id="opt-${optIdx}" value="${optIdx}" style="accent-color:var(--accent-primary); cursor:pointer;">
+      <label for="opt-${optIdx}" style="cursor:pointer; font-size:0.92rem; line-height:1.4; flex:1; color:var(--text-primary);">${optText}</label>
+    `;
+    optDiv.onclick = () => {
+      document.querySelectorAll('.quiz-option-item').forEach(el => {
+        el.style.borderColor = 'var(--border-color)';
+        el.style.background = 'var(--bg-input)';
+      });
+      optDiv.style.borderColor = 'var(--accent-primary)';
+      optDiv.style.background = 'rgba(99,102,241,0.12)';
+      const radio = optDiv.querySelector('input');
+      if (radio) radio.checked = true;
+      selectedQuizAnswer = optIdx;
+    };
+    optionsContainer.appendChild(optDiv);
+  });
+
+  const nextBtn = document.getElementById('quiz-next-btn');
+  if (nextBtn) {
+    nextBtn.innerHTML = currentQuizIndex === skillQuizData.length - 1 ? 'Submit Assessment ✓' : 'Next Question <i data-lucide="arrow-right"></i>';
+    if (window.lucide) lucide.createIcons();
+  }
+}
+
+function submitQuizAnswer() {
+  if (selectedQuizAnswer === null) {
+    showToast('Please select an answer option to proceed.', 'info');
+    return;
+  }
+
+  const qData = skillQuizData[currentQuizIndex];
+  if (selectedQuizAnswer === qData.correctIndex) {
+    userQuizScore++;
+  }
+
+  currentQuizIndex++;
+
+  if (currentQuizIndex < skillQuizData.length) {
+    renderQuizQuestion();
+  } else {
+    // Show Quiz Results Screen
+    const body = document.getElementById('quiz-body');
+    const results = document.getElementById('quiz-results');
+
+    if (body) body.style.display = 'none';
+    if (results) results.style.display = 'block';
+
+    const percent = Math.round((userQuizScore / skillQuizData.length) * 100);
+    const scoreGained = Math.floor(Math.random() * 5) + 5; // 5-9% increase
+
+    const currentVal = parseInt(document.getElementById('skill-val-mgmt').innerText) || 34;
+    const newVal = Math.min(100, currentVal + scoreGained);
+
+    document.getElementById('skill-val-mgmt').innerText = `${newVal}%`;
+    document.getElementById('skill-bar-mgmt').style.width = `${newVal}%`;
+
+    const lessonVal = parseInt(document.getElementById('stat-lessons-val').innerText) || 10;
+    document.getElementById('stat-lessons-val').innerText = lessonVal + 1;
+
+    document.getElementById('quiz-result-score-text').innerText = `You scored ${userQuizScore}/${skillQuizData.length} (${percent}%)!`;
+    document.getElementById('quiz-bonus-text').innerText = `+${scoreGained}% Management & Strategy Skill`;
+
+    showToast(`Quiz Completed! Score: ${percent}%. Skill increased to ${newVal}%!`, 'success');
+  }
+}
+
+function closeSkillQuizModal() {
+  const modal = document.getElementById('quiz-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
 }
 
 // --- Course Video Player Engine ---
