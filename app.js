@@ -318,37 +318,80 @@ function startSkillQuiz() {
   showToast(`Quiz Passed! Management Skill increased by +${scoreGained}%`, 'success');
 }
 
-// --- Course Video Player ---
-let isPlaying = false;
-
+// --- Course Video Player Engine ---
 function toggleVideoPlayback() {
-  isPlaying = !isPlaying;
-  const playIcon = document.getElementById('play-icon');
-  if (playIcon) {
-    playIcon.setAttribute('data-lucide', isPlaying ? 'pause' : 'play');
-    if (window.lucide) lucide.createIcons();
+  const video = document.getElementById('main-course-video');
+  if (!video) return;
+
+  if (video.paused) {
+    video.play().then(() => {
+      showToast('Video Playing...', 'info');
+    }).catch(err => console.warn('Video play deferred:', err));
+  } else {
+    video.pause();
+    showToast('Video Paused', 'info');
   }
-  showToast(isPlaying ? 'Video Playing...' : 'Video Paused', 'info');
+}
+
+function handleVideoPlayState(isPlaying) {
+  showToast(isPlaying ? 'Video Playing' : 'Video Paused', 'info');
+}
+
+function updateVideoTimeTracker() {
+  const video = document.getElementById('main-course-video');
+  const playerTime = document.getElementById('player-time');
+  if (!video || !playerTime) return;
+
+  const currentMins = Math.floor(video.currentTime / 60);
+  const currentSecs = Math.floor(video.currentTime % 60).toString().padStart(2, '0');
+  const durationMins = Math.floor((video.duration || 750) / 60);
+  const durationSecs = Math.floor((video.duration || 750) % 60).toString().padStart(2, '0');
+
+  playerTime.innerText = `${currentMins}:${currentSecs} / ${durationMins}:${durationSecs}`;
 }
 
 function openCoursePlayer(courseId) {
   switchTab('courses');
   if (courseId === 1) {
-    selectLesson(1, '1. Introduction to Full Stack Architecture', '12:30', 'Learn modern architecture patterns and client-server setups.');
+    selectLesson(1, '1. Introduction to Full Stack Architecture', '12:30', 'Learn modern architecture patterns and client-server setups.', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
   } else if (courseId === 2) {
-    selectLesson(2, '2. Digital Marketing & Growth Hacking', '14:20', 'Understand SEO, funnel conversion metrics, and content strategy.');
+    selectLesson(2, '2. Database Modeling & Fast APIs', '18:45', 'Design relational schemas, SQL queries, and FastAPI endpoints.', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
   }
 }
 
-function selectLesson(index, title, duration, description) {
-  document.querySelectorAll('.lesson-item').forEach(item => item.classList.remove('active'));
-  const selectedItem = document.querySelectorAll('.lesson-item')[index - 1];
-  if (selectedItem) selectedItem.classList.add('active');
+function selectLesson(index, title, duration, description, videoUrl) {
+  document.querySelectorAll('.lesson-item').forEach((item, idx) => {
+    if (idx === index - 1) {
+      item.classList.add('active');
+      const icon = item.querySelector('i');
+      if (icon) {
+        icon.setAttribute('data-lucide', 'play-circle');
+        icon.style.color = 'var(--accent-primary)';
+      }
+    } else {
+      item.classList.remove('active');
+    }
+  });
 
-  document.getElementById('player-title').innerText = title;
-  document.getElementById('player-time').innerText = `00:00 / ${duration}`;
-  document.getElementById('lesson-header-title').innerText = title;
-  document.getElementById('lesson-desc').innerText = description;
+  const video = document.getElementById('main-course-video');
+  const playerTitle = document.getElementById('player-title');
+  const playerTime = document.getElementById('player-time');
+  const lessonHeader = document.getElementById('lesson-header-title');
+  const lessonDesc = document.getElementById('lesson-desc');
+
+  if (playerTitle) playerTitle.innerText = title;
+  if (playerTime) playerTime.innerText = `00:00 / ${duration}`;
+  if (lessonHeader) lessonHeader.innerText = title;
+  if (lessonDesc) lessonDesc.innerText = description;
+
+  if (video && videoUrl) {
+    video.src = videoUrl;
+    video.load();
+    video.play().catch(err => console.log('Autoplay deferred:', err));
+  }
+
+  if (window.lucide) lucide.createIcons();
+  showToast(`Loaded Lesson: ${title}`, 'success');
 }
 
 function markLessonComplete() {
