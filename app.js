@@ -593,18 +593,93 @@ function updateVideoTimeTracker() {
   playerTime.innerText = `${currentMins}:${currentSecs} / ${durationMins}:${durationSecs}`;
 }
 
-function openCoursePlayer(courseId) {
-  switchTab('courses');
-  if (courseId === 1) {
-    selectLesson(1, '1. Introduction to Full Stack Architecture', '12:30', 'Learn modern architecture patterns and client-server setups.', 'Ke90Tje7VS0');
-  } else if (courseId === 2) {
-    selectLesson(2, '2. Database Modeling & Fast APIs', '18:45', 'Design relational schemas, SQL queries, and FastAPI endpoints.', 'SqcY0GlETPk');
+// --- Multi-Course Catalog & Video Stream Routing Engine ---
+const COURSE_CATALOG = {
+  1: {
+    title: "Full Stack Developer Masterclass",
+    desc: "Learn modern full-stack web application architecture, REST API design, state management, and real-time database synchronization with hands-on practice.",
+    lessons: [
+      { id: 1, title: "1. Introduction to Full Stack Architecture", duration: "12:30", badge: "Free Preview", desc: "Learn modern architecture patterns and client-server setups.", videoId: "Ke90Tje7VS0" },
+      { id: 2, title: "2. Database Modeling & Fast APIs", duration: "18:45", badge: "Core", desc: "Design relational schemas, SQL queries, and FastAPI endpoints.", videoId: "SqcY0GlETPk" },
+      { id: 3, title: "3. Frontend State & UI Components", duration: "22:10", badge: "Advanced", desc: "Build dynamic UI components, state stores, and glassmorphism styling.", videoId: "O6P86uwfdR0" },
+      { id: 4, title: "4. Deployment & Cloud CI/CD", duration: "15:00", badge: "Master", desc: "Deploy full-stack applications with automated testing and HTTPS.", videoId: "VPvVD8t02U8" }
+    ]
+  },
+  2: {
+    title: "Digital Marketing & Growth Hacking",
+    desc: "Master SEO strategies, funnel conversion metrics, social media algorithms, content marketing, and Google Analytics to scale digital products.",
+    lessons: [
+      { id: 1, title: "1. Modern Digital Marketing Foundations", duration: "14:20", badge: "Free Preview", desc: "Understand SEO, funnel conversion metrics, and content strategy.", videoId: "nU-IIXBWlS4" },
+      { id: 2, title: "2. SEO & Funnel Optimization", duration: "16:35", badge: "Core", desc: "Optimize target keywords, technical SEO, and conversion funnels.", videoId: "xsVT_-46C3g" },
+      { id: 3, title: "3. Growth Hacking & Analytics", duration: "19:10", badge: "Advanced", desc: "Analyze user retention metrics, A/B experiments, and growth loops.", videoId: "v7V_18M-WJ0" },
+      { id: 4, title: "4. Content Strategy & Social Ads", duration: "15:45", badge: "Master", desc: "Build scalable social ad campaigns and organic content funnels.", videoId: "bixR-KIJKYM" }
+    ]
+  },
+  3: {
+    title: "UI/UX & Mobile Design Masterclass",
+    desc: "Learn wireframing, Figma design systems, visual hierarchy, responsive layout components, and Flutter UI integration.",
+    lessons: [
+      { id: 1, title: "1. Figma Fundamentals & Design Systems", duration: "11:15", badge: "Free Preview", desc: "Master component variants, auto layout, and color design tokens.", videoId: "c9Wg6Cb_YlU" },
+      { id: 2, title: "2. User Research & Information Architecture", duration: "15:40", badge: "Core", desc: "Conduct user interviews, map user flows, and wireframe interfaces.", videoId: "jqy7F7t__oM" },
+      { id: 3, title: "3. Micro-Interactions & Prototyping", duration: "13:50", badge: "Advanced", desc: "Create interactive glassmorphic micro-animations and transitions.", videoId: "351_eP595m8" },
+      { id: 4, title: "4. Design Hand-off to Developers", duration: "14:10", badge: "Master", desc: "Export clean asset tokens and integrate Figma designs with Flutter.", videoId: "3rK7-nK_g7E" }
+    ]
   }
+};
+
+let currentActiveCourseId = 1;
+
+function openCoursePlayer(courseId) {
+  currentActiveCourseId = courseId || 1;
+  switchTab('courses');
+  loadCourseDetails(currentActiveCourseId);
 }
 
-function selectLesson(index, title, duration, description, videoId) {
+function loadCourseDetails(courseId) {
+  const course = COURSE_CATALOG[courseId] || COURSE_CATALOG[1];
+
+  const headerTitle = document.getElementById('lesson-header-title');
+  const mainDesc = document.getElementById('lesson-desc');
+  const syllabusContainer = document.querySelector('.lesson-list');
+
+  if (headerTitle) headerTitle.innerText = course.title;
+  if (mainDesc) mainDesc.innerText = course.desc;
+
+  if (syllabusContainer) {
+    syllabusContainer.innerHTML = '';
+    course.lessons.forEach((les, idx) => {
+      const lesDiv = document.createElement('div');
+      lesDiv.className = `lesson-item ${idx === 0 ? 'active' : ''}`;
+      lesDiv.innerHTML = `
+        <div>
+          <h5 style="font-size:0.9rem; font-weight:700;">${les.title}</h5>
+          <span style="font-size:0.78rem; color:var(--text-secondary);">${les.duration} • ${les.badge}</span>
+        </div>
+        <i data-lucide="${idx === 0 ? 'play-circle' : 'lock'}" style="${idx === 0 ? 'color:var(--accent-primary);' : 'font-size:14px; color:var(--text-muted);'}"></i>
+      `;
+      lesDiv.onclick = () => {
+        selectCourseLesson(courseId, les.id);
+      };
+      syllabusContainer.appendChild(lesDiv);
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  // Load first lesson of selected course
+  if (course.lessons.length > 0) {
+    const firstLes = course.lessons[0];
+    updateActiveVideoPlayer(firstLes.title, firstLes.duration, firstLes.desc, firstLes.videoId);
+  }
+
+  showToast(`Loaded Course: ${course.title}`, 'success');
+}
+
+function selectCourseLesson(courseId, lessonId) {
+  const course = COURSE_CATALOG[courseId] || COURSE_CATALOG[1];
+  const lesson = course.lessons.find(l => l.id === lessonId) || course.lessons[0];
+
   document.querySelectorAll('.lesson-item').forEach((item, idx) => {
-    if (idx === index - 1) {
+    if (idx === lessonId - 1) {
       item.classList.add('active');
       const icon = item.querySelector('i');
       if (icon) {
@@ -616,23 +691,27 @@ function selectLesson(index, title, duration, description, videoId) {
     }
   });
 
+  updateActiveVideoPlayer(lesson.title, lesson.duration, lesson.desc, lesson.videoId);
+  showToast(`Loaded Lesson: ${lesson.title}`, 'info');
+}
+
+function selectLesson(index, title, duration, description, videoId) {
+  selectCourseLesson(currentActiveCourseId, index);
+}
+
+function updateActiveVideoPlayer(title, duration, description, videoId) {
   const iframe = document.getElementById('main-course-iframe');
   const playerTitle = document.getElementById('player-title');
   const playerTime = document.getElementById('player-time');
-  const lessonHeader = document.getElementById('lesson-header-title');
   const lessonDesc = document.getElementById('lesson-desc');
 
   if (playerTitle) playerTitle.innerText = title;
   if (playerTime) playerTime.innerText = `Duration: ${duration}`;
-  if (lessonHeader) lessonHeader.innerText = title;
   if (lessonDesc) lessonDesc.innerText = description;
 
   if (iframe && videoId) {
     iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`;
   }
-
-  if (window.lucide) lucide.createIcons();
-  showToast(`Loaded Lesson: ${title}`, 'success');
 }
 
 function markLessonComplete() {
