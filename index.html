@@ -20,6 +20,15 @@
   <div id="toast-container"></div>
 
   <div class="app-container">
+    <!-- GOOGLE PIXEL 5 STATUS BAR -->
+    <div class="pixel-5-status-bar">
+      <span>9:41</span>
+      <div style="display:flex; gap:0.4rem; align-items:center;">
+        <i data-lucide="wifi" style="width:13px; height:13px;"></i>
+        <i data-lucide="signal" style="width:13px; height:13px;"></i>
+        <i data-lucide="battery-charging" style="width:13px; height:13px; color:var(--accent-green);"></i>
+      </div>
+    </div>
     
     <!-- Top Navigation Header -->
     <header class="navbar">
@@ -42,6 +51,10 @@
       </div>
 
       <div class="nav-right">
+        <button class="icon-btn" id="pixel5-toggle-btn" title="Toggle Google Pixel 5 Viewport Mode" onclick="togglePixel5Mode()" style="background:rgba(59,130,246,0.15); color:var(--accent-primary); border:1px solid rgba(59,130,246,0.3);">
+          <i data-lucide="smartphone"></i>
+        </button>
+
         <button class="icon-btn" id="theme-toggle-btn" title="Toggle Light/Dark Theme" onclick="toggleTheme()">
           <i data-lucide="sun" id="theme-icon"></i>
         </button>
