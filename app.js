@@ -337,14 +337,116 @@ const skillQuizData = [
       "Removing focus outlines from form inputs."
     ],
     correctIndex: 0
+  },
+  {
+    category: "Backend & FastAPI",
+    question: "4. Why should async route handlers (`async def`) be used for I/O-bound tasks in FastAPI?",
+    options: [
+      "Allows the event loop to handle thousands of concurrent requests without blocking execution.",
+      "Automatically encrypts all outgoing JSON HTTP response payloads.",
+      "Prevents database connections from ever timing out.",
+      "Converts Python backend code into native C++ binaries."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "Database & SQL Optimization",
+    question: "5. What database optimization technique prevents full table scans on large tables?",
+    options: [
+      "Creating B-Tree indexes on frequently queried search & foreign key columns.",
+      "Deleting all primary keys from relational tables.",
+      "Storing every column as a long un-indexed TEXT blob.",
+      "Disabling SQL transactions and foreign key constraints."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "Frontend & React",
+    question: "6. How do `useMemo` and `useCallback` improve React application performance?",
+    options: [
+      "They memoize expensive calculation values and function references across re-renders.",
+      "They automatically convert CSS flexbox layouts into CSS grid.",
+      "They replace HTTP API requests with local storage variables.",
+      "They prevent browsers from downloading images."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "Mobile App Development",
+    question: "7. In Flutter, what is the key advantage of using `const` constructors for static widgets?",
+    options: [
+      "Tells Flutter to reuse widget instances and avoid rebuilding unchanged subtrees.",
+      "Enables background location tracking when the app is closed.",
+      "Automatically translates Dart code into Swift and Kotlin UI.",
+      "Increases the maximum memory allocated to the engine."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "Cloud & DevOps",
+    question: "8. What is the main goal of a CI/CD automated pipeline in GitHub Actions?",
+    options: [
+      "Automate building, testing, linting, and deploying code on every push.",
+      "Generate synthetic database users for load testing.",
+      "Replace local Git version control with cloud storage.",
+      "Prevent developers from committing code to feature branches."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "API Security",
+    question: "9. How does JWT (JSON Web Token) authentication secure client-server API requests?",
+    options: [
+      "Cryptographically signs token payloads so servers can verify client identity statelessly.",
+      "Encrypts local Wi-Fi router signals to protect against physical tampering.",
+      "Stores plain-text user passwords inside browser cookies.",
+      "Blocks all incoming GET requests from mobile devices."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "System Design & Resilience",
+    question: "10. What does the Circuit Breaker pattern accomplish in microservice architecture?",
+    options: [
+      "Prevents cascading failures by stopping calls to a failing service until it recovers.",
+      "Doubles CPU server frequency during high network traffic bursts.",
+      "Automatically merges duplicate user accounts in MySQL.",
+      "Deletes old log files when hard drive storage is full."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "Real-Time Systems",
+    question: "11. Why are WebSockets preferred over standard HTTP polling for real-time live sync?",
+    options: [
+      "Provides persistent, low-overhead bidirectional streaming between client and server.",
+      "Allows browsers to load web pages without an internet connection.",
+      "Compresses JPEG images into PNG files automatically.",
+      "Disables CORS security restrictions on cross-domain servers."
+    ],
+    correctIndex: 0
+  },
+  {
+    category: "Test Automation",
+    question: "12. What is the primary purpose of end-to-end (E2E) testing with Selenium and Appium?",
+    options: [
+      "Simulates real user interactions on Web & Mobile to verify complete user flows.",
+      "Measures compiler execution speed for Python & C++ scripts.",
+      "Generates artificial user profile avatars and names.",
+      "Replaces unit tests with manual regression testing."
+    ],
+    correctIndex: 0
   }
 ];
 
+let activeQuizQuestions = [];
 let currentQuizIndex = 0;
 let selectedQuizAnswer = null;
 let userQuizScore = 0;
 
 function startSkillQuiz() {
+  // Select 5 randomized questions from 12-question pool
+  activeQuizQuestions = [...skillQuizData].sort(() => 0.5 - Math.random()).slice(0, 5);
   currentQuizIndex = 0;
   selectedQuizAnswer = null;
   userQuizScore = 0;
@@ -364,7 +466,7 @@ function startSkillQuiz() {
 }
 
 function renderQuizQuestion() {
-  const qData = skillQuizData[currentQuizIndex];
+  const qData = activeQuizQuestions[currentQuizIndex];
   if (!qData) return;
 
   selectedQuizAnswer = null;
@@ -373,7 +475,7 @@ function renderQuizQuestion() {
   const catBadge = document.getElementById('quiz-category-badge');
   const qTitle = document.getElementById('quiz-question-title');
 
-  if (stepIndicator) stepIndicator.innerText = `Question ${currentQuizIndex + 1} of ${skillQuizData.length}`;
+  if (stepIndicator) stepIndicator.innerText = `Question ${currentQuizIndex + 1} of ${activeQuizQuestions.length}`;
   if (catBadge) catBadge.innerText = qData.category;
   if (qTitle) qTitle.innerText = qData.question;
 
@@ -405,7 +507,7 @@ function renderQuizQuestion() {
 
   const nextBtn = document.getElementById('quiz-next-btn');
   if (nextBtn) {
-    nextBtn.innerHTML = currentQuizIndex === skillQuizData.length - 1 ? 'Submit Assessment ✓' : 'Next Question <i data-lucide="arrow-right"></i>';
+    nextBtn.innerHTML = currentQuizIndex === activeQuizQuestions.length - 1 ? 'Submit Assessment ✓' : 'Next Question <i data-lucide="arrow-right"></i>';
     if (window.lucide) lucide.createIcons();
   }
 }
@@ -416,14 +518,14 @@ function submitQuizAnswer() {
     return;
   }
 
-  const qData = skillQuizData[currentQuizIndex];
+  const qData = activeQuizQuestions[currentQuizIndex];
   if (selectedQuizAnswer === qData.correctIndex) {
     userQuizScore++;
   }
 
   currentQuizIndex++;
 
-  if (currentQuizIndex < skillQuizData.length) {
+  if (currentQuizIndex < activeQuizQuestions.length) {
     renderQuizQuestion();
   } else {
     // Show Quiz Results Screen
@@ -433,7 +535,7 @@ function submitQuizAnswer() {
     if (body) body.style.display = 'none';
     if (results) results.style.display = 'block';
 
-    const percent = Math.round((userQuizScore / skillQuizData.length) * 100);
+    const percent = Math.round((userQuizScore / activeQuizQuestions.length) * 100);
     const scoreGained = Math.floor(Math.random() * 5) + 5; // 5-9% increase
 
     const currentVal = parseInt(document.getElementById('skill-val-mgmt').innerText) || 34;
