@@ -19,12 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
 let firebaseDb = null;
 
 const firebaseConfig = {
-  apiKey: "AIzaSySkillSnapAIFirebaseProdKey",
+  apiKey: "AIzaSyAVN-TZd_B6nQoSF8xhAlxXJwsCurCdCLI",
   authDomain: "skillsnap-ai-82f7b.firebaseapp.com",
   projectId: "skillsnap-ai-82f7b",
-  storageBucket: "skillsnap-ai-82f7b.appspot.com",
-  messagingSenderId: "987654321098",
-  appId: "1:987654321098:web:skillsnapai"
+  storageBucket: "skillsnap-ai-82f7b.firebasestorage.app",
+  messagingSenderId: "556387645013",
+  appId: "1:556387645013:web:f38f9024f2b1d3d623259e"
 };
 
 function initFirebaseSync() {
