@@ -20,9 +20,9 @@ let firebaseDb = null;
 
 const firebaseConfig = {
   apiKey: "AIzaSySkillSnapAIFirebaseProdKey",
-  authDomain: "skillsnap-ai-prod.firebaseapp.com",
-  projectId: "skillsnap-ai-prod",
-  storageBucket: "skillsnap-ai-prod.appspot.com",
+  authDomain: "skillsnap-ai-82f7b.firebaseapp.com",
+  projectId: "skillsnap-ai-82f7b",
+  storageBucket: "skillsnap-ai-82f7b.appspot.com",
   messagingSenderId: "987654321098",
   appId: "1:987654321098:web:skillsnapai"
 };
