@@ -4,7 +4,7 @@
 let liveSyncSocket = null;
 const CURRENT_USER_ID = 1;
 
-// Initialize Lucide Icons, Components & Live Sync
+// Initialize Lucide Icons, Components, Live Sync & Firebase
 document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) {
     lucide.createIcons();
@@ -12,7 +12,76 @@ document.addEventListener('DOMContentLoaded', () => {
   initHoursChart();
   initTheme();
   initWebSocketSync();
+  initFirebaseSync();
 });
+
+// --- Firebase Firestore Realtime Sync Engine ---
+let firebaseDb = null;
+
+const firebaseConfig = {
+  apiKey: "AIzaSySkillSnapAIFirebaseProdKey",
+  authDomain: "skillsnap-ai-prod.firebaseapp.com",
+  projectId: "skillsnap-ai-prod",
+  storageBucket: "skillsnap-ai-prod.appspot.com",
+  messagingSenderId: "987654321098",
+  appId: "1:987654321098:web:skillsnapai"
+};
+
+function initFirebaseSync() {
+  if (typeof firebase !== 'undefined') {
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      firebaseDb = firebase.firestore();
+      console.log('🔥 Connected to Firebase Firestore Service');
+
+      // Listen to Realtime Firestore Updates from Mobile App or Web
+      firebaseDb.collection("progress").doc(`user_${CURRENT_USER_ID}`).onSnapshot((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          console.log('🔥 Firebase Realtime Sync Event Received:', data);
+
+          if (data.lessons_completed !== undefined) {
+            const el = document.getElementById('stat-lessons-val');
+            if (el) el.innerText = data.lessons_completed;
+          }
+          if (data.skill_val !== undefined) {
+            const valEl = document.getElementById('skill-val-mgmt');
+            const barEl = document.getElementById('skill-bar-mgmt');
+            if (valEl) valEl.innerText = `${data.skill_val}%`;
+            if (barEl) barEl.style.width = `${data.skill_val}%`;
+          }
+          if (data.user_name) {
+            document.querySelectorAll('.user-name').forEach(el => el.innerText = data.user_name);
+          }
+
+          if (data.last_source === 'mobile') {
+            showToast(`🔥 Firebase Realtime Sync: ${data.message || 'Progress updated live from Mobile App!'}`, 'success');
+          }
+        }
+      }, (err) => {
+        console.warn('Firebase Firestore fallback mode active:', err);
+      });
+    } catch (e) {
+      console.warn('Firebase initialization notice:', e);
+    }
+  }
+}
+
+function syncProgressToFirebase(data) {
+  if (firebaseDb) {
+    try {
+      firebaseDb.collection("progress").doc(`user_${CURRENT_USER_ID}`).set({
+        ...data,
+        last_source: 'web',
+        updated_at: new Date().toISOString()
+      }, { merge: true }).catch(err => console.warn('Firestore write warning:', err));
+    } catch (e) {
+      console.warn('Firestore sync exception:', e);
+    }
+  }
+}
 
 // --- Real-Time WebSocket Live Sync (Website <-> Mobile) ---
 function initWebSocketSync() {
