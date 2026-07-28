@@ -29,10 +29,25 @@ function initWebSocketSync() {
     liveSyncSocket.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
-        console.log('⚡ Real-time Event Received from Mobile:', payload);
-        if (payload.event === 'MOBILE_UPDATE' || payload.event === 'DATA_UPDATED') {
-          showToast(`📱 Live Sync: ${payload.data.message || 'Data updated on Mobile!'}`, 'success');
+        console.log('⚡ Real-time Sync Event Received:', payload);
+        const data = payload.data || payload;
+        
+        if (data.lessons_completed !== undefined) {
+          const el = document.getElementById('stat-lessons-val');
+          if (el) el.innerText = data.lessons_completed;
         }
+        if (data.skill_val !== undefined) {
+          const valEl = document.getElementById('skill-val-mgmt');
+          const barEl = document.getElementById('skill-bar-mgmt');
+          if (valEl) valEl.innerText = `${data.skill_val}%`;
+          if (barEl) barEl.style.width = `${data.skill_val}%`;
+        }
+        if (data.user_name) {
+          document.querySelectorAll('.user-name').forEach(el => el.innerText = data.user_name);
+        }
+
+        const syncMsg = data.message || 'Progress synchronized live across App & Website!';
+        showToast(`⚡ Real-Time Live Sync: ${syncMsg}`, 'success');
       } catch (err) {
         console.warn('Failed to parse WebSocket message', err);
       }
@@ -716,7 +731,14 @@ function updateActiveVideoPlayer(title, duration, description, videoId) {
 
 function markLessonComplete() {
   const lessonVal = parseInt(document.getElementById('stat-lessons-val').innerText) || 10;
-  document.getElementById('stat-lessons-val').innerText = lessonVal + 1;
+  const newVal = lessonVal + 1;
+  document.getElementById('stat-lessons-val').innerText = newVal;
+  
+  emitLiveSyncUpdate('LESSON_COMPLETED', {
+    lessons_completed: newVal,
+    message: 'Completed a lesson on Website!'
+  });
+
   showToast('Lesson marked as complete! +1 Lesson Progress', 'success');
 }
 
