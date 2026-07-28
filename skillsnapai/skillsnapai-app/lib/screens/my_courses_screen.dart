@@ -300,7 +300,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: courses.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 14),
+                        separatorBuilder: (_, _) => const SizedBox(width: 14),
                         itemBuilder: (context, index) {
                           final course = courses[index];
 
@@ -348,7 +348,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                                           ? Image.network(
                                               course['image_url'],
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) {
+                                              errorBuilder: (_, _, _) {
                                                 return Container(
                                                   color: Colors.grey.shade300,
                                                   child: const Icon(
@@ -475,7 +475,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                         itemCount: lessons.length,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final lesson = Map<String, dynamic>.from(
                             lessons[index],
@@ -505,7 +505,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                                     height: 55,
                                     width: 55,
                                     decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.12),
+                                      color: Colors.blue.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: const Icon(

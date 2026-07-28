@@ -30,8 +30,8 @@ function initWebSocketSync() {
       try {
         const payload = JSON.parse(event.data);
         console.log('⚡ Real-time Event Received from Mobile:', payload);
-        if (payload.event === 'MOBILE_UPDATE' || payload.event === 'DATA_UPDATED') {
-          showToast(`📱 Live Sync: ${payload.data.message || 'Data updated on Mobile!'}`, 'success');
+        if (payload.event === 'MOBILE_UPDATE' || payload.event === 'DATA_UPDATED' || payload.event === 'PROFILE_UPDATE' || payload.event === 'SKILL_UPDATE' || payload.event === 'LESSON_COMPLETE') {
+          handleIncomingMobileSync(payload);
         }
       } catch (err) {
         console.warn('Failed to parse WebSocket message', err);
@@ -74,6 +74,61 @@ function emitLiveSyncUpdate(eventType, data) {
     }).catch(err => console.warn('Sync broadcast fallback error:', err));
   }
 }
+
+// --- Live Reactive Sync Engine (Mobile -> Website) ---
+function handleIncomingMobileSync(payload) {
+  const data = payload.data || {};
+  const action = data.action || payload.event || '';
+
+  // 1. Profile & User Info Sync
+  if (data.full_name || action === 'PROFILE_UPDATE') {
+    const newName = data.full_name || data.name;
+    if (newName) {
+      document.querySelectorAll('.user-name').forEach(el => el.innerText = newName);
+      showToast(`📱 Live Mobile Sync: User profile updated to "${newName}"`, 'success');
+    }
+  }
+
+  // 2. Skill Progress Sync
+  if (data.skill_name || action === 'SKILL_UPDATE') {
+    const val = data.progress_percent || data.value;
+    if (val !== undefined) {
+      const skillValEl = document.getElementById('skill-val-mgmt');
+      const skillBarEl = document.getElementById('skill-bar-mgmt');
+      if (skillValEl) skillValEl.innerText = `${val}%`;
+      if (skillBarEl) skillBarEl.style.width = `${val}%`;
+      showToast(`📱 Live Mobile Sync: Skill "${data.skill_name || 'Management'}" updated to ${val}%`, 'success');
+    }
+  }
+
+  // 3. Lesson Completion Sync
+  if (action === 'LESSON_COMPLETE' || action === 'COURSE_UPDATE' || data.lessons_completed) {
+    const lessonValEl = document.getElementById('stat-lessons-val');
+    if (lessonValEl) {
+      const current = parseInt(lessonValEl.innerText) || 10;
+      lessonValEl.innerText = data.lessons_completed || (current + 1);
+    }
+    showToast(`📱 Live Mobile Sync: ${data.message || 'Lesson progress updated on mobile!'}`, 'success');
+  }
+
+  // 4. ATS Resume Score Sync
+  if (action === 'RESUME_UPDATE' || data.ats_score) {
+    const score = data.ats_score;
+    if (score !== undefined) {
+      const badge = document.getElementById('overall-ats-badge');
+      const scoreATS = document.getElementById('score-ats');
+      if (badge) badge.innerText = `Score: ${score}/100`;
+      if (scoreATS) scoreATS.innerText = `${score}%`;
+      showToast(`📱 Live Mobile Sync: ATS Resume score updated to ${score}/100`, 'success');
+    }
+  }
+
+  // 5. General Mobile Update Toast
+  if (!action && data.message) {
+    showToast(`📱 Live Mobile Sync: ${data.message}`, 'info');
+  }
+}
+
 
 // --- Toast Notification System ---
 function showToast(message, type = 'info') {

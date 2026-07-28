@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../services/api_service.dart';
 import 'home_screen.dart';
 import 'mentorship_screen.dart';
 import 'my_courses_screen.dart';
@@ -20,6 +21,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool notificationsEnabled = true;
   bool emailUpdatesEnabled = true;
   bool darkModeEnabled = false;
+
+  void _showEditProfileDialog(BuildContext context) {
+    final controller = TextEditingController(text: 'John Jonson');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Profile Name'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Full Name',
+            hintText: 'Enter new name',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                ApiService.broadcastLiveUpdate(
+                  userId: 1,
+                  eventType: 'PROFILE_UPDATE',
+                  data: {
+                    'action': 'PROFILE_UPDATE',
+                    'full_name': newName,
+                  },
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('📱 Live Synced to website: $newName'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save & Sync Live'),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _onNavTap(int index) {
     if (index == 3) return;
@@ -123,15 +170,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.grey.shade800 : Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.edit,
-                        color: isDark ? Colors.white : Colors.black87,
+                    GestureDetector(
+                      onTap: () => _showEditProfileDialog(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey.shade800 : Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.edit,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
                       ),
                     ),
                   ],
@@ -154,8 +204,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   isDark: isDark,
                   icon: Icons.person_outline,
                   title: 'Profile Details',
-                  subtitle: 'Edit name, email and phone',
-                  onTap: () {},
+                  subtitle: 'Edit name, email and phone (Syncs Live)',
+                  onTap: () => _showEditProfileDialog(context),
                 ),
                 _sectionTile(
                   isDark: isDark,
@@ -335,7 +385,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 height: 46,
                 width: 46,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5B67FF).withOpacity(0.12),
+                  color: const Color(0xFF5B67FF).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: const Color(0xFF5B67FF)),
@@ -398,7 +448,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               height: 46,
               width: 46,
               decoration: BoxDecoration(
-                color: const Color(0xFF5B67FF).withOpacity(0.12),
+                color: const Color(0xFF5B67FF).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: const Color(0xFF5B67FF)),
