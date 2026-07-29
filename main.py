@@ -87,6 +87,12 @@ in_memory_firebase_state = {
 def get_all_users_json():
     return in_memory_firebase_state
 
+@app.put("/users.json")
+async def put_all_users_json(payload: dict):
+    global in_memory_firebase_state
+    in_memory_firebase_state.update(payload)
+    return in_memory_firebase_state
+
 @app.get("/users/{user_id}.json")
 def get_user_json(user_id: int):
     return in_memory_firebase_state.get(user_id, in_memory_firebase_state[1])

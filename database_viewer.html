@@ -133,6 +133,7 @@
       <h3>
         <span>🔥 Firebase Realtime Database</span>
         <select id="user-select" onchange="fetchLiveDatabase()">
+          <option value="root">🌐 Database Root Node (/users.json - All 10 Users)</option>
           <option value="1">User #1: John Jonson (Lead AI Engineer)</option>
           <option value="2">User #2: Sarah Chen (Mobile Developer)</option>
           <option value="3">User #3: Alex Rivera (UI/UX Designer)</option>
@@ -208,7 +209,7 @@
 
       Object.values(USERS_DATABASE).forEach(u => {
         const tr = document.createElement('tr');
-        if (u.user_id == selectedId) {
+        if (selectedId === 'root' || u.user_id == selectedId) {
           tr.style.background = 'rgba(59, 130, 246, 0.15)';
           tr.style.fontWeight = 'bold';
         }
@@ -226,12 +227,13 @@
 
     async function fetchLiveDatabase() {
       const selectedUserId = document.getElementById('user-select').value;
-      document.getElementById('db-path').innerText = `/users/${selectedUserId}.json`;
+      const isRoot = selectedUserId === 'root';
+      const pathStr = isRoot ? '/users.json (Root Node)' : `/users/${selectedUserId}.json`;
+      document.getElementById('db-path').innerText = pathStr;
 
-      const endpoints = [
-        `http://localhost:8000/users/${selectedUserId}.json`,
-        `https://skillsnap-ai-cloud.firebaseio.com/users/${selectedUserId}.json`
-      ];
+      const endpoints = isRoot 
+        ? ['http://localhost:8000/users.json', 'https://skillsnap-ai-cloud.firebaseio.com/users.json']
+        : [`http://localhost:8000/users/${selectedUserId}.json`, `https://skillsnap-ai-cloud.firebaseio.com/users/${selectedUserId}.json`];
 
       renderSQLTable();
 
@@ -241,7 +243,7 @@
           if (res.ok) {
             const data = await res.json();
             document.getElementById('json-tree').innerText = JSON.stringify(data, null, 2);
-            if (data.skills) {
+            if (!isRoot && data.skills) {
               if (data.skills['UI/UX Design']) document.getElementById('skill-ui').innerText = data.skills['UI/UX Design'] + '%';
               if (data.skills['FastAPI Backend']) document.getElementById('skill-api').innerText = data.skills['FastAPI Backend'] + '%';
               if (data.skills['Flutter Mobile']) document.getElementById('skill-flutter').innerText = data.skills['Flutter Mobile'] + '%';
@@ -252,13 +254,8 @@
       }
 
       // Fallback display from multi-user database
-      const fallbackData = USERS_DATABASE[selectedUserId] || USERS_DATABASE[1];
+      const fallbackData = isRoot ? USERS_DATABASE : (USERS_DATABASE[selectedUserId] || USERS_DATABASE[1]);
       document.getElementById('json-tree').innerText = JSON.stringify(fallbackData, null, 2);
-      if (fallbackData.skills) {
-        document.getElementById('skill-ui').innerText = fallbackData.skills['UI/UX Design'] + '%';
-        document.getElementById('skill-api').innerText = fallbackData.skills['FastAPI Backend'] + '%';
-        document.getElementById('skill-flutter').innerText = fallbackData.skills['Flutter Mobile'] + '%';
-      }
     }
 
     renderSQLTable();
