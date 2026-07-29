@@ -506,11 +506,37 @@ def get_my_courses(user_id: int):
                     "course_id": 1,
                     "status": "In Progress",
                     "progress_percent": 75,
-                    "title": "FastAPI & AI Integration",
-                    "subtitle": "Build Production APIs",
+                    "title": "FastAPI Backend Architecture",
+                    "subtitle": "Python, Pydantic & WebSockets",
                     "description": "Learn to connect frontend and mobile apps to FastAPI backends.",
                     "image_url": "assets/images/course1.png",
-                    "lesson_count": 12,
+                    "lesson_count": 5,
+                    "rating": 4.9
+                },
+                {
+                    "user_course_id": 2,
+                    "user_id": user_id,
+                    "course_id": 2,
+                    "status": "In Progress",
+                    "progress_percent": 40,
+                    "title": "Flutter Mobile Cross-Platform",
+                    "subtitle": "Dart, Reactive Layouts & State",
+                    "description": "Build high-performance cross-platform iOS and Android mobile apps.",
+                    "image_url": "assets/images/course2.png",
+                    "lesson_count": 5,
+                    "rating": 4.8
+                },
+                {
+                    "user_course_id": 3,
+                    "user_id": user_id,
+                    "course_id": 3,
+                    "status": "In Progress",
+                    "progress_percent": 90,
+                    "title": "UI/UX Figma Product Design",
+                    "subtitle": "Auto-Layout, Tokens & WCAG",
+                    "description": "Master modern product UI/UX design systems and micro-interactions.",
+                    "image_url": "assets/images/course3.png",
+                    "lesson_count": 5,
                     "rating": 4.9
                 }
             ]

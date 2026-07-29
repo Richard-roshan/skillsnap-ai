@@ -340,11 +340,33 @@ class ApiService {
           "user_course_id": 1,
           "course_id": 1,
           "status": "In Progress",
-          "progress_percent": 65,
-          "title": "Full Stack Architecture",
-          "subtitle": "FastAPI & Flutter Integration",
-          "description": "Learn modern architecture patterns.",
-          "lesson_count": 12,
+          "progress_percent": 75,
+          "title": "FastAPI Backend Architecture",
+          "subtitle": "Python, Pydantic & WebSockets",
+          "description": "Learn to connect frontend and mobile apps to FastAPI backends.",
+          "lesson_count": 5,
+          "rating": 4.9
+        },
+        {
+          "user_course_id": 2,
+          "course_id": 2,
+          "status": "In Progress",
+          "progress_percent": 40,
+          "title": "Flutter Mobile Cross-Platform",
+          "subtitle": "Dart, Reactive Layouts & State",
+          "description": "Build high-performance cross-platform iOS and Android mobile apps.",
+          "lesson_count": 5,
+          "rating": 4.8
+        },
+        {
+          "user_course_id": 3,
+          "course_id": 3,
+          "status": "In Progress",
+          "progress_percent": 90,
+          "title": "UI/UX Figma Product Design",
+          "subtitle": "Auto-Layout, Tokens & WCAG",
+          "description": "Master modern product UI/UX design systems and micro-interactions.",
+          "lesson_count": 5,
           "rating": 4.9
         }
       ]
