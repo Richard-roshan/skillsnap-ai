@@ -172,6 +172,31 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                             ),
+                            ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF10B981),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.bolt, size: 14),
+                                label: const Text('⚡ Sync Live', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                onPressed: () async {
+                                  ApiService.lessonsCompleted += 1;
+                                  ApiService.hoursSpent = double.parse((ApiService.hoursSpent + 0.5).toStringAsFixed(1));
+                                  await ApiService.updateFirebase();
+                                  if (mounted) setState(() {});
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('⚡ Progress Made! Lesson #${ApiService.lessonsCompleted} Completed (+0.5h). Synced live to Firebase & Web!'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              const SizedBox(width: 4),
                             IconButton(
                               icon: Icon(
                                 isDark ? Icons.light_mode : Icons.dark_mode,
