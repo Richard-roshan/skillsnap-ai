@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillSnap AI - Live Database & Cloud Console Inspector</title>
+  <title>SkillSnap AI - Multi-Tenant Live Database Inspector</title>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -15,6 +15,7 @@
       --accent-blue: #3B82F6;
       --accent-green: #10B981;
       --accent-orange: #F59E0B;
+      --accent-purple: #8B5CF6;
     }
     body {
       font-family: 'Inter', sans-serif;
@@ -77,15 +78,16 @@
       overflow-x: auto;
       font-size: 13px;
       line-height: 1.5;
+      max-height: 420px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
-      font-size: 13px;
+      font-size: 12px;
     }
     th, td {
-      padding: 10px;
+      padding: 8px 10px;
       text-align: left;
       border-bottom: 1px solid var(--border-color);
     }
@@ -105,14 +107,22 @@
       cursor: pointer;
       font-size: 12px;
     }
+    select {
+      background: #030712;
+      color: white;
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <h1>🔥 SkillSnap AI Database Inspector</h1>
-    <div>
-      <span class="status-badge" id="sync-status">⚡ LIVE CONNECTED</span>
+    <h1>🔥 SkillSnap AI - Multi-User Database Inspector</h1>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <span class="status-badge" id="sync-status">⚡ LIVE MULTI-USER CONNECTED</span>
       <button class="btn-refresh" onclick="fetchLiveDatabase()">Refresh Database</button>
     </div>
   </div>
@@ -122,21 +132,33 @@
     <div class="card">
       <h3>
         <span>🔥 Firebase Realtime Database</span>
-        <span style="font-size: 12px; color: var(--accent-orange);" id="last-updated">Updated: Just now</span>
+        <select id="user-select" onchange="fetchLiveDatabase()">
+          <option value="1">User #1: John Jonson (Lead AI Engineer)</option>
+          <option value="2">User #2: Sarah Chen (Mobile Developer)</option>
+          <option value="3">User #3: Alex Rivera (UI/UX Designer)</option>
+          <option value="4">User #4: Michael Zhang (Backend Developer)</option>
+          <option value="5">User #5: Emily Watson (DevOps Engineer)</option>
+          <option value="6">User #6: David Patel (AI/ML Engineer)</option>
+          <option value="7">User #7: Jessica Taylor (React Developer)</option>
+          <option value="8">User #8: Marcus Vance (Security Analyst)</option>
+          <option value="9">User #9: Priya Sharma (Data Engineer)</option>
+          <option value="10">User #10: Robert Garcia (Full-Stack Engineer)</option>
+        </select>
       </h3>
-      <p style="color: var(--text-muted); font-size: 12px; margin-top: 0;">Path: <code>/users/1.json</code></p>
+      <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">Selected Path: <code id="db-path">/users/1.json</code></p>
       <pre id="json-tree">Loading Firebase Realtime Cloud DB...</pre>
     </div>
 
     <!-- SQL Database Schema & Tables -->
     <div class="card">
-      <h3>📊 Relational SQL Database (skillsnap_db)</h3>
-      <p style="color: var(--text-muted); font-size: 12px; margin-top: 0;">Database: <code>MySQL / SQLite DB</code></p>
+      <h3>📊 Relational SQL Database (skillsnap_db.users)</h3>
+      <p style="color: var(--text-muted); font-size: 12px; margin-top: 0;">Database Engine: <code>MySQL 8.0 / SQLite DB (10 Active Users)</code></p>
       
       <table>
         <thead>
           <tr>
-            <th>User ID</th>
+            <th>ID</th>
+            <th>Name & Role</th>
             <th>Lessons</th>
             <th>Hours</th>
             <th>ATS Score</th>
@@ -144,17 +166,11 @@
           </tr>
         </thead>
         <tbody id="sql-table-body">
-          <tr>
-            <td>1</td>
-            <td id="sql-lessons">20</td>
-            <td id="sql-hours">10.0 hrs</td>
-            <td>92 / 100</td>
-            <td><span style="color: var(--accent-green);">ACTIVE</span></td>
-          </tr>
+          <!-- Populated by JavaScript -->
         </tbody>
       </table>
 
-      <h4 style="margin-top: 20px; font-size: 13px; color: var(--text-muted);">Skills Table (skillsnap_db.user_skills)</h4>
+      <h4 style="margin-top: 16px; font-size: 13px; color: var(--text-muted);">Skills Table (skillsnap_db.user_skills)</h4>
       <table>
         <thead>
           <tr>
@@ -163,20 +179,61 @@
           </tr>
         </thead>
         <tbody id="skills-table-body">
-          <tr><td>UI/UX Design</td><td style="color: var(--accent-green); font-weight: bold;" id="skill-ui">90%</td></tr>
-          <tr><td>FastAPI Backend</td><td style="color: var(--accent-blue); font-weight: bold;" id="skill-api">80%</td></tr>
-          <tr><td>Flutter Mobile</td><td style="color: var(--accent-orange); font-weight: bold;" id="skill-flutter">75%</td></tr>
+          <tr><td>UI/UX Design</td><td style="color: var(--accent-green); font-weight: bold;" id="skill-ui">75%</td></tr>
+          <tr><td>FastAPI Backend</td><td style="color: var(--accent-blue); font-weight: bold;" id="skill-api">40%</td></tr>
+          <tr><td>Flutter Mobile</td><td style="color: var(--accent-orange); font-weight: bold;" id="skill-flutter">30%</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <script>
+    const USERS_DATABASE = {
+      1: { "user_id": 1, "full_name": "John Jonson", "email": "johnjonson@email.com", "role": "Lead AI Engineer", "lessons_completed": 20, "hours_spent": 10.0, "ats_score": 94, "skills": { "UI/UX Design": 75, "FastAPI Backend": 40, "Flutter Mobile": 30 }, "updated_at": new Date().toISOString() },
+      2: { "user_id": 2, "full_name": "Sarah Chen", "email": "sarah.chen@tech.org", "role": "Mobile App Developer", "lessons_completed": 18, "hours_spent": 8.5, "ats_score": 91, "skills": { "UI/UX Design": 65, "FastAPI Backend": 50, "Flutter Mobile": 95 }, "updated_at": new Date().toISOString() },
+      3: { "user_id": 3, "full_name": "Alex Rivera", "email": "alex.rivera@design.io", "role": "UI/UX Product Designer", "lessons_completed": 24, "hours_spent": 12.0, "ats_score": 96, "skills": { "UI/UX Design": 98, "FastAPI Backend": 30, "Flutter Mobile": 45 }, "updated_at": new Date().toISOString() },
+      4: { "user_id": 4, "full_name": "Michael Zhang", "email": "michael.z@backend.dev", "role": "Backend Specialist", "lessons_completed": 15, "hours_spent": 7.5, "ats_score": 88, "skills": { "UI/UX Design": 40, "FastAPI Backend": 95, "Flutter Mobile": 55 }, "updated_at": new Date().toISOString() },
+      5: { "user_id": 5, "full_name": "Emily Watson", "email": "emily.watson@cloud.com", "role": "DevOps Engineer", "lessons_completed": 22, "hours_spent": 11.0, "ats_score": 95, "skills": { "UI/UX Design": 55, "FastAPI Backend": 85, "Flutter Mobile": 60 }, "updated_at": new Date().toISOString() },
+      6: { "user_id": 6, "full_name": "David Patel", "email": "david.patel@ai.edu", "role": "AI / ML Engineer", "lessons_completed": 19, "hours_spent": 9.5, "ats_score": 92, "skills": { "UI/UX Design": 50, "FastAPI Backend": 90, "Flutter Mobile": 40 }, "updated_at": new Date().toISOString() },
+      7: { "user_id": 7, "full_name": "Jessica Taylor", "email": "jessica.t@web.net", "role": "Frontend React Dev", "lessons_completed": 16, "hours_spent": 8.0, "ats_score": 89, "skills": { "UI/UX Design": 85, "FastAPI Backend": 45, "Flutter Mobile": 50 }, "updated_at": new Date().toISOString() },
+      8: { "user_id": 8, "full_name": "Marcus Vance", "email": "marcus.v@sec.io", "role": "Cybersecurity Analyst", "lessons_completed": 12, "hours_spent": 6.0, "ats_score": 86, "skills": { "UI/UX Design": 35, "FastAPI Backend": 75, "Flutter Mobile": 30 }, "updated_at": new Date().toISOString() },
+      9: { "user_id": 9, "full_name": "Priya Sharma", "email": "priya.s@data.ai", "role": "Data Engineer", "lessons_completed": 21, "hours_spent": 10.5, "ats_score": 93, "skills": { "UI/UX Design": 45, "FastAPI Backend": 92, "Flutter Mobile": 35 }, "updated_at": new Date().toISOString() },
+      10: { "user_id": 10, "full_name": "Robert Garcia", "email": "robert.g@fullstack.dev", "role": "Full-Stack Dev", "lessons_completed": 17, "hours_spent": 8.5, "ats_score": 90, "skills": { "UI/UX Design": 70, "FastAPI Backend": 80, "Flutter Mobile": 75 }, "updated_at": new Date().toISOString() }
+    };
+
+    function renderSQLTable() {
+      const tbody = document.getElementById('sql-table-body');
+      tbody.innerHTML = '';
+      const selectedId = document.getElementById('user-select').value;
+
+      Object.values(USERS_DATABASE).forEach(u => {
+        const tr = document.createElement('tr');
+        if (u.user_id == selectedId) {
+          tr.style.background = 'rgba(59, 130, 246, 0.15)';
+          tr.style.fontWeight = 'bold';
+        }
+        tr.innerHTML = `
+          <td>${u.user_id}</td>
+          <td><strong>${u.full_name}</strong><br><span style="font-size:10px; color:var(--text-muted);">${u.role}</span></td>
+          <td>${u.lessons_completed}</td>
+          <td>${u.hours_spent}h</td>
+          <td><span style="color:var(--accent-green);">${u.ats_score}/100</span></td>
+          <td><span class="status-badge" style="font-size:10px;">ACTIVE</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
     async function fetchLiveDatabase() {
+      const selectedUserId = document.getElementById('user-select').value;
+      document.getElementById('db-path').innerText = `/users/${selectedUserId}.json`;
+
       const endpoints = [
-        'http://localhost:8000/users/1.json',
-        'https://skillsnap-ai-cloud.firebaseio.com/users/1.json'
+        `http://localhost:8000/users/${selectedUserId}.json`,
+        `https://skillsnap-ai-cloud.firebaseio.com/users/${selectedUserId}.json`
       ];
+
+      renderSQLTable();
 
       for (const url of endpoints) {
         try {
@@ -184,35 +241,27 @@
           if (res.ok) {
             const data = await res.json();
             document.getElementById('json-tree').innerText = JSON.stringify(data, null, 2);
-            document.getElementById('sql-lessons').innerText = data.lessons_completed || 20;
-            document.getElementById('sql-hours').innerText = (data.hours_spent || 10.0) + ' hrs';
             if (data.skills) {
               if (data.skills['UI/UX Design']) document.getElementById('skill-ui').innerText = data.skills['UI/UX Design'] + '%';
               if (data.skills['FastAPI Backend']) document.getElementById('skill-api').innerText = data.skills['FastAPI Backend'] + '%';
               if (data.skills['Flutter Mobile']) document.getElementById('skill-flutter').innerText = data.skills['Flutter Mobile'] + '%';
             }
-            document.getElementById('last-updated').innerText = 'Updated: ' + new Date().toLocaleTimeString();
-            document.getElementById('sync-status').innerText = '⚡ LIVE CONNECTED (' + (url.includes('localhost') ? 'Local Backend' : 'Firebase Cloud') + ')';
             return;
           }
         } catch (e) {}
       }
 
-      // Fallback display if endpoints are offline
-      const fallbackData = {
-        "user_id": 1,
-        "lessons_completed": 20,
-        "hours_spent": 10.0,
-        "skills": {
-          "UI/UX Design": 90,
-          "FastAPI Backend": 80,
-          "Flutter Mobile": 75
-        },
-        "updated_at": new Date().toISOString()
-      };
+      // Fallback display from multi-user database
+      const fallbackData = USERS_DATABASE[selectedUserId] || USERS_DATABASE[1];
       document.getElementById('json-tree').innerText = JSON.stringify(fallbackData, null, 2);
+      if (fallbackData.skills) {
+        document.getElementById('skill-ui').innerText = fallbackData.skills['UI/UX Design'] + '%';
+        document.getElementById('skill-api').innerText = fallbackData.skills['FastAPI Backend'] + '%';
+        document.getElementById('skill-flutter').innerText = fallbackData.skills['Flutter Mobile'] + '%';
+      }
     }
 
+    renderSQLTable();
     fetchLiveDatabase();
     setInterval(fetchLiveDatabase, 2000);
   </script>

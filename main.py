@@ -69,32 +69,39 @@ async def broadcast_update(payload: LiveSyncPayload):
     })
     return {"status": "broadcast_sent", "user_id": payload.user_id}
 
-# Realtime Cloud Database State Cache
+# Multi-Tenant Realtime Cloud Database State Cache (10 Active Users)
 in_memory_firebase_state = {
-    "user_id": 1,
-    "lessons_completed": 14,
-    "hours_spent": 7.0,
-    "skills": {
-        "UI/UX Design": 75,
-        "FastAPI Backend": 40,
-        "Flutter Mobile": 30
-    },
-    "updated_at": "2026-07-29T00:20:22Z"
+    1: { "user_id": 1, "full_name": "John Jonson", "email": "johnjonson@email.com", "role": "Lead AI Engineer", "lessons_completed": 20, "hours_spent": 10.0, "ats_score": 94, "skills": { "UI/UX Design": 75, "FastAPI Backend": 40, "Flutter Mobile": 30 }, "updated_at": "2026-07-29T12:00:00Z" },
+    2: { "user_id": 2, "full_name": "Sarah Chen", "email": "sarah.chen@tech.org", "role": "Mobile App Developer", "lessons_completed": 18, "hours_spent": 8.5, "ats_score": 91, "skills": { "UI/UX Design": 65, "FastAPI Backend": 50, "Flutter Mobile": 95 }, "updated_at": "2026-07-29T12:00:00Z" },
+    3: { "user_id": 3, "full_name": "Alex Rivera", "email": "alex.rivera@design.io", "role": "UI/UX Product Designer", "lessons_completed": 24, "hours_spent": 12.0, "ats_score": 96, "skills": { "UI/UX Design": 98, "FastAPI Backend": 30, "Flutter Mobile": 45 }, "updated_at": "2026-07-29T12:00:00Z" },
+    4: { "user_id": 4, "full_name": "Michael Zhang", "email": "michael.z@backend.dev", "role": "Backend Specialist", "lessons_completed": 15, "hours_spent": 7.5, "ats_score": 88, "skills": { "UI/UX Design": 40, "FastAPI Backend": 95, "Flutter Mobile": 55 }, "updated_at": "2026-07-29T12:00:00Z" },
+    5: { "user_id": 5, "full_name": "Emily Watson", "email": "emily.watson@cloud.com", "role": "DevOps Engineer", "lessons_completed": 22, "hours_spent": 11.0, "ats_score": 95, "skills": { "UI/UX Design": 55, "FastAPI Backend": 85, "Flutter Mobile": 60 }, "updated_at": "2026-07-29T12:00:00Z" },
+    6: { "user_id": 6, "full_name": "David Patel", "email": "david.patel@ai.edu", "role": "AI / ML Engineer", "lessons_completed": 19, "hours_spent": 9.5, "ats_score": 92, "skills": { "UI/UX Design": 50, "FastAPI Backend": 90, "Flutter Mobile": 40 }, "updated_at": "2026-07-29T12:00:00Z" },
+    7: { "user_id": 7, "full_name": "Jessica Taylor", "email": "jessica.t@web.net", "role": "Frontend React Dev", "lessons_completed": 16, "hours_spent": 8.0, "ats_score": 89, "skills": { "UI/UX Design": 85, "FastAPI Backend": 45, "Flutter Mobile": 50 }, "updated_at": "2026-07-29T12:00:00Z" },
+    8: { "user_id": 8, "full_name": "Marcus Vance", "email": "marcus.v@sec.io", "role": "Cybersecurity Analyst", "lessons_completed": 12, "hours_spent": 6.0, "ats_score": 86, "skills": { "UI/UX Design": 35, "FastAPI Backend": 75, "Flutter Mobile": 30 }, "updated_at": "2026-07-29T12:00:00Z" },
+    9: { "user_id": 9, "full_name": "Priya Sharma", "email": "priya.s@data.ai", "role": "Data Engineer", "lessons_completed": 21, "hours_spent": 10.5, "ats_score": 93, "skills": { "UI/UX Design": 45, "FastAPI Backend": 92, "Flutter Mobile": 35 }, "updated_at": "2026-07-29T12:00:00Z" },
+    10: { "user_id": 10, "full_name": "Robert Garcia", "email": "robert.g@fullstack.dev", "role": "Full-Stack Dev", "lessons_completed": 17, "hours_spent": 8.5, "ats_score": 90, "skills": { "UI/UX Design": 70, "FastAPI Backend": 80, "Flutter Mobile": 75 }, "updated_at": "2026-07-29T12:00:00Z" }
 }
+
+@app.get("/users.json")
+def get_all_users_json():
+    return in_memory_firebase_state
 
 @app.get("/users/{user_id}.json")
 def get_user_json(user_id: int):
-    return in_memory_firebase_state
+    return in_memory_firebase_state.get(user_id, in_memory_firebase_state[1])
 
 @app.put("/users/{user_id}.json")
 async def put_user_json(user_id: int, payload: dict):
     global in_memory_firebase_state
-    in_memory_firebase_state.update(payload)
+    if user_id not in in_memory_firebase_state:
+        in_memory_firebase_state[user_id] = {}
+    in_memory_firebase_state[user_id].update(payload)
     await manager.broadcast_to_user(user_id, {
         "type": "PROGRESS_UPDATE",
-        "progress": in_memory_firebase_state
+        "progress": in_memory_firebase_state[user_id]
     })
-    return in_memory_firebase_state
+    return in_memory_firebase_state[user_id]
 
 def get_db_connection():
     try:
