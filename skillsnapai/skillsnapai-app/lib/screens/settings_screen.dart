@@ -62,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
               Navigator.pop(ctx);
             },
-            child: const Text('Save & Sync Live'),
+            child: const Text('Save Profile'),
           ),
         ],
       ),
