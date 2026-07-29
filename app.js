@@ -1073,39 +1073,6 @@ async function updateWebFirebase(progress) {
   saveWebProgressLocally(payload);
 }
 
-async function triggerLiveFirebaseSyncTest() {
-  const lessonsElem = document.getElementById('dash-lessons');
-  const hoursElem = document.getElementById('dash-hours');
-  
-  let currentLessons = lessonsElem ? parseInt(lessonsElem.innerText) || 14 : 14;
-  let currentHours = hoursElem ? parseFloat(hoursElem.innerText) || 7.0 : 7.0;
-
-  currentLessons += 1;
-  currentHours = parseFloat((currentHours + 0.5).toFixed(1));
-
-  const currentSkills = (userProgressCache && userProgressCache.skills) ? userProgressCache.skills : {
-    "UI/UX Design": 75,
-    "FastAPI Backend": 40,
-    "Flutter Mobile": 30
-  };
-
-  const newProgress = {
-    user_id: 1,
-    lessons_completed: currentLessons,
-    hours_spent: currentHours,
-    skills: {
-      "UI/UX Design": Math.min(100, (currentSkills["UI/UX Design"] || 75) + 5),
-      "FastAPI Backend": Math.min(100, (currentSkills["FastAPI Backend"] || 40) + 5),
-      "Flutter Mobile": Math.min(100, (currentSkills["Flutter Mobile"] || 30) + 5)
-    },
-    updated_at: new Date().toISOString()
-  };
-
-  updateWebDashboardStats(newProgress);
-  await updateWebFirebase(newProgress);
-  showToast(`⚡ Progress Made! Lesson #${currentLessons} Completed (+0.5h). Synced live to Firebase & Mobile App!`, 'info');
-}
-
 function saveWebProgressLocally(progress) {
   try {
     localStorage.setItem('skillsnap_user_progress', JSON.stringify(progress));

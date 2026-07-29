@@ -9,6 +9,14 @@ class ApiService {
   static const String baseUrl = 'http://localhost:8000';
   static const String wsUrl = 'ws://10.0.2.2:8000';
 
+  static int lessonsCompleted = 14;
+  static double hoursSpent = 7.0;
+  static Map<String, int> skillLevels = {
+    'UI/UX Design': 75,
+    'FastAPI Backend': 40,
+    'Flutter Mobile': 30,
+  };
+
   static Future<void> saveProgressLocally(Map<String, dynamic> data) async {
     try {
       final prefs = await SharedPreferences.getInstance();
