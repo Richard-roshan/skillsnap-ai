@@ -739,6 +739,7 @@ function handleResumeFileSelected(input) {
     const tag = document.querySelector('.file-name-tag');
     if (tag) tag.innerText = name;
     showToast(`📄 Uploaded ${name}. ATS Score evaluated: 92/100 (ATS Friendly)!`, 'success');
+    autoTrackAndSyncProgress(1, 0.5, 'UI/UX Design', 5);
     openFullReportModal();
   }
 }
@@ -756,6 +757,7 @@ function openResumeBuilderModal() {
   const tag = document.querySelector('.file-name-tag');
   if (tag) tag.innerText = customName;
   showToast(`📄 Generated ${customName}. ATS Compatibility evaluated: 94/100!`, 'success');
+  autoTrackAndSyncProgress(1, 0.5, 'UI/UX Design', 5);
   openFullReportModal();
 }
 
@@ -955,6 +957,39 @@ async function incrementProgressWeb(lessons, hours, skillName, skillInc) {
   } catch (e) {
     console.log('Progress increment error', e);
   }
+}
+
+async function autoTrackAndSyncProgress(lessonsInc = 1, hoursInc = 0.5, skillName = null, skillInc = 5) {
+  const lessonsElem = document.getElementById('dash-lessons');
+  const hoursElem = document.getElementById('dash-hours');
+  
+  let currentLessons = lessonsElem ? parseInt(lessonsElem.innerText) || 14 : 14;
+  let currentHours = hoursElem ? parseFloat(hoursElem.innerText) || 7.0 : 7.0;
+
+  currentLessons += lessonsInc;
+  currentHours = parseFloat((currentHours + hoursInc).toFixed(1));
+
+  const currentSkills = (userProgressCache && userProgressCache.skills) ? userProgressCache.skills : {
+    "UI/UX Design": 75,
+    "FastAPI Backend": 40,
+    "Flutter Mobile": 30
+  };
+
+  if (skillName && currentSkills[skillName] !== undefined) {
+    currentSkills[skillName] = Math.min(100, currentSkills[skillName] + skillInc);
+  }
+
+  const newProgress = {
+    user_id: 1,
+    lessons_completed: currentLessons,
+    hours_spent: currentHours,
+    skills: currentSkills,
+    updated_at: new Date().toISOString()
+  };
+
+  updateWebDashboardStats(newProgress);
+  await updateWebFirebase(newProgress);
+  console.log('⚡ Automatic Progress Tracked & Synced Live to Firebase:', newProgress);
 }
 
 const FIREBASE_DB_URL = 'https://skillsnap-ai-cloud.firebaseio.com/users/1.json';
