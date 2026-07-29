@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// WhatsApp-style Bidirectional Firebase Realtime Cloud Synchronization Engine
 class FirebaseService {
   static const String firebaseDbUrl = 'https://skillsnap-ai-cloud.firebaseio.com/users/1.json';
   static const List<String> fallbackUrls = [
@@ -12,9 +13,11 @@ class FirebaseService {
 
   static bool isConnected = false;
   static DateTime? lastSyncedAt;
+  static List<Map<String, dynamic>> chatMessages = [];
+  static String profileName = 'John Jonson';
 
-  /// Fetch user progress from Firebase Realtime Cloud Database
-  static Future<Map<String, dynamic>?> fetchProgressFromFirebase() async {
+  /// Fetch full state (Progress + Profile + Live Chat Messages) from Firebase Realtime Cloud Database
+  static Future<Map<String, dynamic>?> fetchFullStateFromFirebase() async {
     for (final url in fallbackUrls) {
       try {
         final response = await http
@@ -25,32 +28,74 @@ class FirebaseService {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           isConnected = true;
           lastSyncedAt = DateTime.now();
+
+          // Sync Profile Name
+          if (data['profile'] != null && data['profile']['full_name'] != null) {
+            profileName = data['profile']['full_name'].toString();
+          }
+
+          // Sync Chat Messages like WhatsApp Web <-> Mobile
+          if (data['chat_messages'] != null && data['chat_messages'] is List) {
+            chatMessages = List<Map<String, dynamic>>.from(
+              (data['chat_messages'] as List).map((x) => Map<String, dynamic>.from(x as Map)),
+            );
+          }
+
           await _saveToLocalCache(data);
           return data;
         }
-      } catch (e) {
-        // Continue to fallback endpoint
-      }
+      } catch (_) {}
     }
     isConnected = false;
     return await _loadFromLocalCache();
   }
 
-  /// Push updated user progress to Firebase Realtime Cloud Database
+  /// Send a WhatsApp-style live chat message to Firebase Realtime Database
+  static Future<bool> sendChatMessage({
+    required String messageText,
+    required String sender, // 'user' or 'assistant'
+  }) async {
+    chatMessages.add({
+      'sender': sender,
+      'text': messageText,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    final currentData = await _loadFromLocalCache() ?? {};
+    currentData['chat_messages'] = chatMessages;
+
+    return await _pushRawStateToFirebase(currentData);
+  }
+
+  /// Update Profile Name live in Firebase Realtime Database
+  static Future<bool> updateProfileName(String newName) async {
+    profileName = newName;
+    final currentData = await _loadFromLocalCache() ?? {};
+    if (currentData['profile'] == null) {
+      currentData['profile'] = {};
+    }
+    currentData['profile']['full_name'] = newName;
+    return await _pushRawStateToFirebase(currentData);
+  }
+
+  /// Push progress metrics to Firebase Realtime Database
   static Future<bool> pushProgressToFirebase({
     required int lessonsCompleted,
     required double hoursSpent,
     required Map<String, int> skills,
   }) async {
-    final payload = {
-      'user_id': 1,
-      'lessons_completed': lessonsCompleted,
-      'hours_spent': hoursSpent,
-      'skills': skills,
-      'platform': 'Flutter Mobile App',
-      'updated_at': DateTime.now().toIso8601String(),
-    };
+    final currentData = await _loadFromLocalCache() ?? {};
+    currentData['user_id'] = 1;
+    currentData['lessons_completed'] = lessonsCompleted;
+    currentData['hours_spent'] = hoursSpent;
+    currentData['skills'] = skills;
+    currentData['platform'] = 'Flutter Mobile App';
+    currentData['updated_at'] = DateTime.now().toIso8601String();
 
+    return await _pushRawStateToFirebase(currentData);
+  }
+
+  static Future<bool> _pushRawStateToFirebase(Map<String, dynamic> payload) async {
     bool success = false;
     for (final url in fallbackUrls) {
       try {
@@ -68,11 +113,8 @@ class FirebaseService {
           lastSyncedAt = DateTime.now();
           break;
         }
-      } catch (e) {
-        // Continue to fallback
-      }
+      } catch (_) {}
     }
-
     await _saveToLocalCache(payload);
     return success;
   }

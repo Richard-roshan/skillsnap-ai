@@ -1005,13 +1005,25 @@ function initFirebaseSDK() {
     if (typeof firebase !== 'undefined' && (!firebase.apps || !firebase.apps.length)) {
       firebase.initializeApp(FIREBASE_CONFIG);
       firebaseDbInstance = firebase.database();
-      console.log('⚡ Firebase Realtime Cloud Database SDK Connected for Web!');
+      console.log('⚡ Firebase Realtime Cloud Database SDK Connected (WhatsApp Web style sync active)!');
       
-      // Real-time Cloud Data Listener
+      // Real-time Cloud Data & Chat Listener
       firebaseDbInstance.ref('users/1').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
           updateWebDashboardStats(data);
+
+          // WhatsApp Web style Profile Name Sync
+          if (data.profile && data.profile.full_name) {
+            const name = data.profile.full_name;
+            document.querySelectorAll('.user-name, .user-title, .settings-user-name').forEach(t => t.innerText = name);
+          }
+
+          // WhatsApp Web style Live Chat Sync
+          if (data.chat_messages && Array.isArray(data.chat_messages)) {
+            renderWebChatMessagesFromFirebase(data.chat_messages);
+          }
+
           saveWebProgressLocally(data);
         }
       });
@@ -1019,6 +1031,21 @@ function initFirebaseSDK() {
   } catch (e) {
     console.log('Firebase SDK init fallback to REST sync', e);
   }
+}
+
+function renderWebChatMessagesFromFirebase(messages) {
+  const container = document.getElementById('chat-messages-container');
+  if (!container) return;
+  
+  // Clear and re-render messages from cloud database
+  container.innerHTML = '';
+  messages.forEach(msg => {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-message ${msg.sender === 'user' ? 'user' : 'assistant'}`;
+    msgDiv.innerHTML = `<p>${msg.text}</p>`;
+    container.appendChild(msgDiv);
+  });
+  container.scrollTop = container.scrollHeight;
 }
 
 async function syncWebWithFirebase() {
