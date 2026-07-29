@@ -38,7 +38,7 @@ class ApiService {
   static const String firebaseDbUrl = FirebaseService.firebaseDbUrl;
 
   static Future<void> syncWithFirebase() async {
-    final data = await FirebaseService.fetchProgressFromFirebase();
+    final data = await FirebaseService.fetchFullStateFromFirebase();
     if (data != null) {
       if (data['lessons_completed'] != null) lessonsCompleted = (data['lessons_completed'] as num).toInt();
       if (data['hours_spent'] != null) hoursSpent = (data['hours_spent'] as num).toDouble();
