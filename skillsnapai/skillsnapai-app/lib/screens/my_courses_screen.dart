@@ -79,7 +79,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
       lessons = [];
     });
 
-    final courseId = _toInt(course['id']);
+    final courseId = _toInt(course['course_id'] ?? course['id'] ?? 1);
 
     try {
       final data = await ApiService.fetchCourseLessons(courseId);
