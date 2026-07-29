@@ -1,7 +1,10 @@
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, EmailStr
 import mysql.connector
+import os
 
 app = FastAPI()
 
@@ -9,6 +12,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,6 +68,33 @@ async def broadcast_update(payload: LiveSyncPayload):
         "data": payload.data
     })
     return {"status": "broadcast_sent", "user_id": payload.user_id}
+
+# Realtime Cloud Database State Cache
+in_memory_firebase_state = {
+    "user_id": 1,
+    "lessons_completed": 14,
+    "hours_spent": 7.0,
+    "skills": {
+        "UI/UX Design": 75,
+        "FastAPI Backend": 40,
+        "Flutter Mobile": 30
+    },
+    "updated_at": "2026-07-29T00:20:22Z"
+}
+
+@app.get("/users/{user_id}.json")
+def get_user_json(user_id: int):
+    return in_memory_firebase_state
+
+@app.put("/users/{user_id}.json")
+async def put_user_json(user_id: int, payload: dict):
+    global in_memory_firebase_state
+    in_memory_firebase_state.update(payload)
+    await manager.broadcast_to_user(user_id, {
+        "type": "PROGRESS_UPDATE",
+        "progress": in_memory_firebase_state
+    })
+    return in_memory_firebase_state
 
 def get_db_connection():
     try:
@@ -239,96 +270,125 @@ def login(request: LoginRequest):
     }
 
 
-def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="root123",
-        database="skillsnap_db"
-    )
+PROGRESS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_progress.json")
+
+def load_user_progress():
+    default_data = {
+        "lessons_completed": 0,
+        "hours_spent": 0.0,
+        "skills": {
+            "UI/UX Design": 0,
+            "Visual & Frontend Design": 0,
+            "Management & Strategy": 0,
+            "Python & FastAPI": 0,
+            "Flutter & Mobile": 0
+        }
+    }
+    if os.path.exists(PROGRESS_FILE):
+        try:
+            with open(PROGRESS_FILE, "r") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    for k, v in default_data["skills"].items():
+                        if "skills" not in data or not isinstance(data["skills"], dict):
+                            data["skills"] = {}
+                        if k not in data["skills"]:
+                            data["skills"][k] = v
+                    return data
+        except Exception:
+            pass
+    return default_data
+
+def save_user_progress(data):
+    try:
+        with open(PROGRESS_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        pass
+
+USER_PROGRESS = load_user_progress()
+
+class IncrementProgressRequest(BaseModel):
+    user_id: int = 1
+    lessons: int = 0
+    hours: float = 0.0
+    skill_name: str = ""
+    skill_increment: int = 0
+
+@app.get("/api/progress")
+def get_user_progress():
+    return {"status": "success", "progress": USER_PROGRESS}
+
+@app.post("/api/progress/increment")
+async def increment_user_progress(req: IncrementProgressRequest):
+    USER_PROGRESS["lessons_completed"] += req.lessons
+    USER_PROGRESS["hours_spent"] += req.hours
+    if req.skill_name:
+        current = USER_PROGRESS["skills"].get(req.skill_name, 0)
+        USER_PROGRESS["skills"][req.skill_name] = min(100, current + req.skill_increment)
+    save_user_progress(USER_PROGRESS)
+    await manager.broadcast_to_user(req.user_id, {"type": "PROGRESS_UPDATE", "progress": USER_PROGRESS})
+    return {"status": "success", "progress": USER_PROGRESS}
+
+@app.post("/api/progress/reset")
+async def reset_user_progress(user_id: int = 1):
+    USER_PROGRESS["lessons_completed"] = 0
+    USER_PROGRESS["hours_spent"] = 0.0
+    USER_PROGRESS["skills"] = {
+        "UI/UX Design": 0,
+        "Visual & Frontend Design": 0,
+        "Management & Strategy": 0,
+        "Python & FastAPI": 0,
+        "Flutter & Mobile": 0
+    }
+    save_user_progress(USER_PROGRESS)
+    await manager.broadcast_to_user(user_id, {"type": "PROGRESS_UPDATE", "progress": USER_PROGRESS})
+    return {"status": "reset", "progress": USER_PROGRESS}
 
 @app.get("/home/dashboard/{user_id}")
 def get_home_dashboard(user_id: int):
-    db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
-
-    # User profile
-    cursor.execute(
-        "SELECT id, full_name, avatar_url FROM users WHERE id = %s",
-        (user_id,)
-    )
-    user = cursor.fetchone()
-    if not user:
-        cursor.close()
-        db.close()
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Stats
-    cursor.execute(
-        """
-        SELECT lessons_completed, hours_spent
-        FROM user_stats
-        WHERE user_id = %s
-        ORDER BY updated_at DESC
-        LIMIT 1
-        """,
-        (user_id,)
-    )
-    stats = cursor.fetchone() or {"lessons_completed": 0, "hours_spent": 0}
-
-    # Skills
-    cursor.execute(
-        """
-        SELECT s.skill_name, us.progress_percent
-        FROM user_skills us
-        JOIN skills s ON us.skill_id = s.id
-        WHERE us.user_id = %s
-        ORDER BY us.id ASC
-        """,
-        (user_id,)
-    )
-    skills = cursor.fetchall()
-
-    # Courses
-    cursor.execute(
-        """
-        SELECT id, title, subtitle, image_url, lesson_count, rating, action_text
-        FROM courses
-        ORDER BY id DESC
-        LIMIT 2
-        """
-    )
-    courses = cursor.fetchall()
-
-    # Career paths
-    cursor.execute(
-        """
-        SELECT cp.id, cp.title, cp.match_percent, cp.demand_level, cp.icon_url
-        FROM user_career_matches ucm
-        JOIN career_paths cp ON ucm.career_path_id = cp.id
-        WHERE ucm.user_id = %s
-        ORDER BY ucm.match_percent DESC
-        LIMIT 3
-        """,
-        (user_id,)
-    )
-    career_paths = cursor.fetchall()
-
-    cursor.close()
-    db.close()
-
     return {
-        "user": user,
-        "stats": stats,
-        "skills": skills,
-        "courses": courses,
-        "career_paths": career_paths
+        "user": {"id": user_id, "full_name": "John Jonson", "avatar_url": "assets/images/user.png"},
+        "stats": {
+            "lessons_completed": USER_PROGRESS["lessons_completed"],
+            "hours_spent": round(USER_PROGRESS["hours_spent"], 1)
+        },
+        "skills": [
+            {"skill_name": "UI/UX Design", "progress_percent": USER_PROGRESS["skills"].get("UI/UX Design", 0)},
+            {"skill_name": "Visual & Frontend Design", "progress_percent": USER_PROGRESS["skills"].get("Visual & Frontend Design", 0)},
+            {"skill_name": "Management & Strategy", "progress_percent": USER_PROGRESS["skills"].get("Management & Strategy", 0)}
+        ],
+        "courses": [
+            {"id": 1, "title": "Advanced FastAPI Architecture", "subtitle": "Master Backend Development", "image_url": "assets/images/course1.jpg", "lesson_count": 14, "rating": 4.9, "action_text": "Start Course"},
+            {"id": 2, "title": "Flutter Cross-Platform Mastery", "subtitle": "Build iOS & Android Apps", "image_url": "assets/images/course2.jpg", "lesson_count": 20, "rating": 4.8, "action_text": "Start Course"}
+        ],
+        "career_paths": [
+            {"path_name": "Full-Stack AI Engineer", "progress_percent": min(100, int((USER_PROGRESS["lessons_completed"] * 10)))}
+        ]
     }
+
 
 
 @app.get("/mentorship/dashboard/{user_id}")
 def get_mentorship_dashboard(user_id: int):
     db = get_db_connection()
+    if not db:
+        return {
+            "user": {"id": user_id, "full_name": "Richard Roshan", "avatar_url": "assets/images/user.png"},
+            "resume": {"id": 1, "resume_name": "Richard_Roshan_Resume.pdf", "resume_file_url": "#", "ats_score": 92},
+            "resume_analysis": {
+                "ats_score": 92,
+                "grammar_score": 95,
+                "keyword_score": 90,
+                "formatting_score": 90,
+                "strengths": "Strong technical keywords, quantifiable achievements.",
+                "weaknesses": "Could add more project URLs.",
+                "suggestions": "Add live deployment links to project sections."
+            },
+            "career_paths": [{"path_name": "AI Systems Engineer", "progress_percent": 85}],
+            "mock_interview": {"id": 1, "score": 88, "feedback": "Great communication and problem-solving skills."},
+            "mentor_chat_count": 5
+        }
     cursor = db.cursor(dictionary=True)
 
     # User
@@ -437,6 +497,24 @@ def get_mentorship_dashboard(user_id: int):
 @app.get("/my-courses/{user_id}")
 def get_my_courses(user_id: int):
     db = get_db_connection()
+    if not db:
+        return {
+            "courses": [
+                {
+                    "user_course_id": 1,
+                    "user_id": user_id,
+                    "course_id": 1,
+                    "status": "In Progress",
+                    "progress_percent": 75,
+                    "title": "FastAPI & AI Integration",
+                    "subtitle": "Build Production APIs",
+                    "description": "Learn to connect frontend and mobile apps to FastAPI backends.",
+                    "image_url": "assets/images/course1.png",
+                    "lesson_count": 12,
+                    "rating": 4.9
+                }
+            ]
+        }
     cursor = db.cursor(dictionary=True)
 
     cursor.execute(
@@ -470,33 +548,30 @@ def get_my_courses(user_id: int):
 
 @app.get("/courses/{course_id}/lessons")
 def get_course_lessons(course_id: int):
-    db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
-
-    cursor.execute(
-        """
-        SELECT
-            id,
-            course_id,
-            lesson_title,
-            lesson_description,
-            video_url,
-            thumbnail_url,
-            duration,
-            lesson_order,
-            is_free
-        FROM course_lessons
-        WHERE course_id = %s
-        ORDER BY lesson_order ASC
-        """,
-        (course_id,)
-    )
-
-    lessons = cursor.fetchall()
-    cursor.close()
-    db.close()
-
-    return {"lessons": lessons}
+    lessons_by_course = {
+        1: [
+            {"id": 101, "course_id": 1, "lesson_title": "1. Introduction to FastAPI & Async Python", "lesson_description": "Setting up Python, Uvicorn ASGI server and async event loops.", "video_url": "tLKKmouUams", "duration": "12:30", "lesson_order": 1, "is_free": True},
+            {"id": 102, "course_id": 1, "lesson_title": "2. Pydantic v2 Schemas & Request Validation", "lesson_description": "Building strict data validation schemas with type hinting.", "video_url": "gQddtTdmG_8", "duration": "18:45", "lesson_order": 2, "is_free": True},
+            {"id": 103, "course_id": 1, "lesson_title": "3. SQLAlchemy ORM & PostgreSQL Integration", "lesson_description": "Connecting FastAPI to relational databases with async sessions.", "video_url": "Z1RJmh_OqeA", "duration": "25:10", "lesson_order": 3, "is_free": True},
+            {"id": 104, "course_id": 1, "lesson_title": "4. JWT Authentication & Security Headers", "lesson_description": "Implementing OAuth2 bearer tokens and bcrypt password hashing.", "video_url": "0sOvCWFmrtA", "duration": "21:15", "lesson_order": 4, "is_free": True},
+            {"id": 105, "course_id": 1, "lesson_title": "5. Real-Time WebSockets & Background Tasks", "lesson_description": "Broadcasting live events to mobile apps and processing background jobs.", "video_url": "vLqTf2b6GZw", "duration": "30:00", "lesson_order": 5, "is_free": True}
+        ],
+        2: [
+            {"id": 201, "course_id": 2, "lesson_title": "1. Flutter Setup & Dart Fundamentals", "lesson_description": "Installing Flutter SDK, Dart syntax, object-oriented concepts.", "video_url": "pTJJsmejUOQ", "duration": "15:00", "lesson_order": 1, "is_free": True},
+            {"id": 202, "course_id": 2, "lesson_title": "2. Mobile UI Layouts & Responsive Grid", "lesson_description": "Building responsive UI using Row, Column, Expanded, and CustomScrollView.", "video_url": "fq4N0hgOWzU", "duration": "22:40", "lesson_order": 2, "is_free": True},
+            {"id": 203, "course_id": 2, "lesson_title": "3. Reactive State Management (Provider)", "lesson_description": "Managing app-wide state reactively without boilerplate code.", "video_url": "x0uinJvhNxI", "duration": "28:15", "lesson_order": 3, "is_free": True},
+            {"id": 204, "course_id": 2, "lesson_title": "4. REST API Integration & HTTP Client", "lesson_description": "Connecting Flutter to REST APIs with error handling and JSON parsing.", "video_url": "1xipg02Wu8s", "duration": "19:50", "lesson_order": 4, "is_free": True},
+            {"id": 205, "course_id": 2, "lesson_title": "5. Local Persistence (SQLite & Hive)", "lesson_description": "Storing user preferences and offline database cache locally.", "video_url": "tLKKmouUams", "duration": "26:30", "lesson_order": 5, "is_free": True}
+        ],
+        3: [
+            {"id": 301, "course_id": 3, "lesson_title": "1. Figma Fundamentals & Auto Layout 5.0", "lesson_description": "Mastering auto-layout, frames, constraints, and component variants.", "video_url": "c9Wg6Cb_YlU", "duration": "14:20", "lesson_order": 1, "is_free": True},
+            {"id": 302, "course_id": 3, "lesson_title": "2. Design Systems & Token Libraries", "lesson_description": "Building reusable UI kits with typography, color tokens, and elevation.", "video_url": "HZuk6Wkx_Eg", "duration": "20:00", "lesson_order": 2, "is_free": True},
+            {"id": 303, "course_id": 3, "lesson_title": "3. Micro-Interactions & Smart Animate", "lesson_description": "Designing fluid button states, modal transitions, and interactive prototypes.", "video_url": "YqQx75OPRa0", "duration": "17:30", "lesson_order": 3, "is_free": True},
+            {"id": 304, "course_id": 3, "lesson_title": "4. User Research & Wireframing", "lesson_description": "Conducting user interviews, mapping user journeys, and wireframing.", "video_url": "CD1Y2DmL5JM", "duration": "24:10", "lesson_order": 4, "is_free": True},
+            {"id": 305, "course_id": 3, "lesson_title": "5. WCAG Accessibility & Color Contrast", "lesson_description": "Ensuring AA/AAA accessibility compliance across web and mobile views.", "video_url": "c9Wg6Cb_YlU", "duration": "16:45", "lesson_order": 5, "is_free": True}
+        ]
+    }
+    return {"lessons": lessons_by_course.get(course_id, lessons_by_course[1])}
 
 
 class ChatRequest(BaseModel):
@@ -536,3 +611,124 @@ def ai_chat_assistant(request: ChatRequest):
         "reply": reply,
         "user_id": request.user_id
     }
+
+class MockInterviewSubmission(BaseModel):
+    role: str
+    question: str
+    answer: str
+
+@app.get("/api/quizzes/{category}")
+def get_quiz_by_category(category: str):
+    cat = category.lower()
+    quizzes = {
+        "fastapi": [
+            {
+                "id": 1,
+                "question": "What parameter is used in FastAPI to define response status codes?",
+                "options": ["status_code=", "response_code=", "http_status=", "code="],
+                "correct_index": 0,
+                "explanation": "FastAPI decorator `@app.get('/', status_code=200)` defines the HTTP response code."
+            },
+            {
+                "id": 2,
+                "question": "Which Pydantic class attribute enables automatic ORM model parsing?",
+                "options": ["from_attributes = True", "orm_mode = True", "parse_orm = True", "model_config = 'orm'"],
+                "correct_index": 0,
+                "explanation": "In Pydantic v2, `from_attributes = True` (formerly `orm_mode`) enables object attribute mapping."
+            }
+        ],
+        "flutter": [
+            {
+                "id": 1,
+                "question": "Which widget is best suited for responsive scrollable lists with dynamic items?",
+                "options": ["ListView.builder", "SingleChildScrollView", "Column", "GridView.count"],
+                "correct_index": 0,
+                "explanation": "ListView.builder lazily builds items as they scroll into view, optimizing memory."
+            },
+            {
+                "id": 2,
+                "question": "What is the primary purpose of ValueNotifier in Flutter?",
+                "options": ["Lightweight state management without external packages", "Database sync", "HTTP routing", "Asset loading"],
+                "correct_index": 0,
+                "explanation": "ValueNotifier triggers UI rebuilds when a single value changes via ValueListenableBuilder."
+            }
+        ],
+        "uiux": [
+            {
+                "id": 1,
+                "question": "What does Fitts's Law predict in UI design?",
+                "options": ["Time required to move to a target area is a function of target distance and size", "Font size readability", "Color contrast accessibility", "Page load time"],
+                "correct_index": 0,
+                "explanation": "Fitts's Law states larger and closer targets are faster and easier to click."
+            }
+        ],
+        "aiml": [
+            {
+                "id": 1,
+                "question": "What framework principle powers RAG (Retrieval-Augmented Generation)?",
+                "options": ["Fetching external context dynamically before generating LLM responses", "Training model weights from scratch", "Data compression", "Quantization"],
+                "correct_index": 0,
+                "explanation": "RAG retrieves relevant external documents to ground the generative response."
+            }
+        ]
+    }
+    return {"category": cat, "questions": quizzes.get(cat, quizzes["fastapi"])}
+
+@app.post("/api/mock-interview/submit")
+def submit_mock_interview(submission: MockInterviewSubmission):
+    ans = (submission.answer or "").strip().lower()
+    words = [w for w in ans.split() if w]
+    
+    # Single word or low-effort responses fail (< 15 chars or < 4 words)
+    if len(ans) < 15 or len(words) < 4 or ans in ["ok", "yes", "no", "idk", "hello", "hi", "good", "fine"]:
+        return {
+            "overall_score": 12,
+            "role": submission.role,
+            "question": submission.question,
+            "technical_depth": "Insufficient response. Single-word or low-effort answers fail technical screening.",
+            "communication_rating": "Needs improvement. Use the STAR methodology (Situation, Task, Action, Result).",
+            "suggestions": "Provide detailed technical explanation. Include architectural components like WebSockets, ConnectionManager, StreamBuilder, and reconnect logic."
+        }
+    
+    # Target keywords by topic
+    q_lower = submission.question.lower()
+    target_keywords = ["websocket", "fastapi", "flutter", "async", "json", "state", "connection", "reconnect", "streambuilder", "broadcast"]
+    if "state" in q_lower or "offline" in q_lower:
+        target_keywords = ["state", "provider", "bloc", "valuenotifier", "offline", "cache", "fallback", "http", "sqflite", "sharedpreferences"]
+    elif "resume" in q_lower or "ats" in q_lower:
+        target_keywords = ["ats", "keyword", "metric", "format", "quantifiable", "section", "action", "verb", "impact"]
+
+    matched = [kw for kw in target_keywords if kw in ans]
+    matched_count = len(matched)
+
+    base_score = min(45, len(words) * 2)
+    kw_score = min(50, matched_count * 12)
+    score = min(98, max(15, base_score + kw_score))
+
+    depth = f"Excellent response! Matched key concepts: [{', '.join(matched)}]." if score >= 75 else (
+        f"Moderate technical depth. Matched concepts: [{', '.join(matched)}]." if score >= 45 else
+        f"Low technical depth. Missing core concepts like: [{', '.join(target_keywords[:4])}]."
+    )
+
+    return {
+        "overall_score": score,
+        "role": submission.role,
+        "question": submission.question,
+        "technical_depth": depth,
+        "communication_rating": "Good structure adhering to technical explanation standards." if len(words) >= 20 else "Response could be more detailed.",
+        "suggestions": f"Incorporate specific terminology like '{', '.join(target_keywords[:3])}'." if matched_count < 3 else "Quantify outcomes (e.g. 'Reduced latency by 40%')."
+    }
+
+# Serve static web app assets (index.html, app.js, styles.css, assets/)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+@app.get("/", response_class=FileResponse)
+def serve_index():
+    return FileResponse(os.path.join(BASE_DIR, "index.html"))
+
+app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="static")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+

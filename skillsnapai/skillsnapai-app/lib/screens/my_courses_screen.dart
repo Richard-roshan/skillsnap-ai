@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../services/api_service.dart';
 import 'home_screen.dart';
 import 'mentorship_screen.dart';
+import 'quiz_mock_interview_screen.dart';
 import 'settings_screen.dart';
 
 class MyCoursesScreen extends StatefulWidget {
@@ -13,7 +14,7 @@ class MyCoursesScreen extends StatefulWidget {
 }
 
 class _MyCoursesScreenState extends State<MyCoursesScreen> {
-  int currentIndex = 2;
+  int currentIndex = 3;
 
   bool isLoading = true;
   bool isLessonsLoading = false;
@@ -26,18 +27,16 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
   Map<String, dynamic>? selectedCourse;
   Map<String, dynamic>? selectedLesson;
 
-  YoutubePlayerController? _ytController;
+  late final WebViewController _webViewController;
 
   @override
   void initState() {
     super.initState();
+    _webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setUserAgent('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36')
+      ..setBackgroundColor(const Color(0xFF000000));
     loadCourses();
-  }
-
-  @override
-  void dispose() {
-    _ytController?.close();
-    super.dispose();
   }
 
   int _toInt(dynamic value) {
@@ -48,15 +47,14 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
   }
 
   Future<void> loadCourses() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
     try {
-      setState(() {
-        isLoading = true;
-        errorMessage = null;
-      });
-
-      final data = await ApiService.fetchMyCourses(1);
-
-      final loadedCourses = data['courses'] as List<dynamic>;
+      final res = await ApiService.fetchMyCourses(1);
+      final loadedCourses = res['courses'] as List<dynamic>;
 
       setState(() {
         courses = loadedCourses;
@@ -64,9 +62,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
       });
 
       if (courses.isNotEmpty) {
-        selectedCourse = Map<String, dynamic>.from(courses[0]);
-
-        await loadLessons(_toInt(courses[0]['course_id']));
+        selectCourse(Map<String, dynamic>.from(courses[0]));
       }
     } catch (e) {
       setState(() {
@@ -76,14 +72,17 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
     }
   }
 
-  Future<void> loadLessons(int courseId) async {
+  Future<void> selectCourse(Map<String, dynamic> course) async {
+    setState(() {
+      selectedCourse = course;
+      isLessonsLoading = true;
+      lessons = [];
+    });
+
+    final courseId = _toInt(course['id']);
+
     try {
-      setState(() {
-        isLessonsLoading = true;
-      });
-
       final data = await ApiService.fetchCourseLessons(courseId);
-
       final loadedLessons = data['lessons'] as List<dynamic>;
 
       setState(() {
@@ -94,75 +93,50 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
       if (lessons.isNotEmpty) {
         selectLesson(Map<String, dynamic>.from(lessons[0]));
       } else {
-        _ytController?.close();
-        _ytController = null;
-
         setState(() {
           selectedLesson = null;
         });
       }
     } catch (e) {
       setState(() {
-        errorMessage = e.toString();
         isLessonsLoading = false;
       });
     }
   }
 
-  String _extractYoutubeVideoId(String input) {
-    final value = input.trim();
-
-    if (value.isEmpty) return '';
-
-    if (!value.contains('http') && value.length >= 11) {
-      return value;
-    }
-
-    final uri = Uri.tryParse(value);
-
-    if (uri == null) return '';
-
-    if (uri.host.contains('youtu.be')) {
-      return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
-    }
-
-    if (uri.host.contains('youtube.com')) {
-      if (uri.pathSegments.contains('watch')) {
-        return uri.queryParameters['v'] ?? '';
-      }
-
-      if (uri.pathSegments.contains('embed') && uri.pathSegments.length >= 2) {
-        return uri.pathSegments[1];
-      }
-
-      if (uri.pathSegments.contains('shorts') && uri.pathSegments.length >= 2) {
-        return uri.pathSegments[1];
-      }
-    }
-
-    return '';
-  }
-
   void selectLesson(Map<String, dynamic> lesson) {
-    final rawVideo =
-        lesson['youtube_video_id']?.toString() ??
-        lesson['video_url']?.toString() ??
-        '';
+    final rawUrl = lesson['video_url'] as String? ?? 'tLKKmouUams';
+    String videoId = rawUrl;
+    if (videoId.contains('v=')) {
+      videoId = videoId.split('v=').last.split('&').first;
+    } else if (videoId.contains('/')) {
+      videoId = videoId.split('/').last;
+    }
+    if (videoId.isEmpty) videoId = 'tLKKmouUams';
 
-    final videoId = _extractYoutubeVideoId(rawVideo);
+    final htmlContent = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    iframe { width: 100%; height: 100%; border: 0; }
+  </style>
+</head>
+<body>
+  <iframe 
+    src="https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&playsinline=1&rel=0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    allowfullscreen>
+  </iframe>
+</body>
+</html>
+''';
 
-    if (videoId.isEmpty) return;
-
-    _ytController?.close();
-
-    _ytController = YoutubePlayerController.fromVideoId(
-      videoId: videoId,
-      params: const YoutubePlayerParams(
-        showControls: true,
-        showFullscreenButton: true,
-        playsInline: true,
-        mute: false,
-      ),
+    _webViewController.loadHtmlString(
+      htmlContent,
+      baseUrl: 'https://skillsnap-ai.surge.sh',
     );
 
     setState(() {
@@ -171,51 +145,44 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
   }
 
   void _onNavTap(int index) {
-    if (index == 2) return;
+    if (index == 3) return;
 
+    Widget target;
     if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      target = const HomeScreen();
     } else if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MentorshipScreen()),
-      );
-    } else if (index == 3) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const SettingsScreen()),
-      );
+      target = const MentorshipScreen();
+    } else if (index == 2) {
+      target = const QuizMockInterviewScreen();
+    } else {
+      target = const SettingsScreen();
     }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => target),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7FB),
+      backgroundColor: isDark ? const Color(0xFF121624) : const Color(0xFFF8FAFC),
 
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
+        currentIndex: 3,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: const Color(0xFF3B82F6),
+        unselectedItemColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+        backgroundColor: isDark ? const Color(0xFF1B2136) : Colors.white,
         onTap: _onNavTap,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school),
-            label: 'Mentorship',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'My Courses',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.school), label: 'Mentorship'),
+          BottomNavigationBarItem(icon: Icon(Icons.quiz), label: 'Quiz & Mock'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'My Courses'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
 
@@ -310,59 +277,55 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
 
                           return GestureDetector(
                             onTap: () async {
-                              setState(() {
-                                selectedCourse = Map<String, dynamic>.from(
-                                  course,
-                                );
-                              });
-
-                              await loadLessons(_toInt(course['course_id']));
+                              await selectCourse(Map<String, dynamic>.from(course));
                             },
-                            child: Container(
-                              width: 250,
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? const Color(0xFFE9E8FF)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
+                              child: Container(
+                                width: 250,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
                                   color: isSelected
-                                      ? Colors.blue
-                                      : Colors.grey.shade300,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: SizedBox(
-                                      height: 110,
-                                      width: double.infinity,
-                                      child:
-                                          (course['image_url'] != null &&
-                                              course['image_url']
-                                                  .toString()
-                                                  .isNotEmpty)
-                                          ? Image.network(
-                                              course['image_url'],
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, _, _) {
-                                                return Container(
-                                                  color: Colors.grey.shade300,
-                                                  child: const Icon(
-                                                    Icons.image,
-                                                  ),
-                                                );
-                                              },
-                                            )
-                                          : Container(
-                                              color: Colors.grey.shade300,
-                                              child: const Icon(Icons.image),
-                                            ),
-                                    ),
+                                      ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
+                                      : (isDark ? const Color(0xFF1B2136) : Colors.white),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF3B82F6)
+                                        : (isDark ? const Color(0xFF334155) : Colors.grey.shade300),
+                                    width: isSelected ? 2 : 1,
                                   ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: SizedBox(
+                                        height: 110,
+                                        width: double.infinity,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: index == 0
+                                                  ? [const Color(0xFF3B82F6), const Color(0xFF1D4ED8)]
+                                                  : (index == 1
+                                                      ? [const Color(0xFF10B981), const Color(0xFF047857)]
+                                                      : [const Color(0xFF8B5CF6), const Color(0xFF6D28D9)]),
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              index == 0
+                                                  ? Icons.code_rounded
+                                                  : (index == 1 ? Icons.phone_android_rounded : Icons.palette_rounded),
+                                              color: Colors.white,
+                                              size: 44,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
 
                                   const SizedBox(height: 14),
 
@@ -436,14 +399,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(18),
-                          child: _ytController != null
-                              ? YoutubePlayer(controller: _ytController!)
-                              : const Center(
-                                  child: Text(
-                                    "Select a lesson",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
+                          child: WebViewWidget(controller: _webViewController),
                         ),
                       ),
                     ),
@@ -490,13 +446,14 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color(0xFFE9E8FF)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(18),
+                                    ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
+                                    : (isDark ? const Color(0xFF1B2136) : Colors.white),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isSelected
-                                      ? Colors.blue
-                                      : Colors.grey.shade300,
+                                      ? const Color(0xFF3B82F6)
+                                      : (isDark ? const Color(0xFF334155) : Colors.grey.shade300),
+                                  width: isSelected ? 2 : 1,
                                 ),
                               ),
                               child: Row(
@@ -505,12 +462,12 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                                     height: 55,
                                     width: 55,
                                     decoration: BoxDecoration(
-                                      color: Colors.blue.withValues(alpha: 0.12),
+                                      color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: const Icon(
                                       Icons.play_circle_fill,
-                                      color: Colors.blue,
+                                      color: Color(0xFF3B82F6),
                                       size: 30,
                                     ),
                                   ),
@@ -527,9 +484,10 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                                               '',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
+                                            color: isDark ? Colors.white : Colors.black,
                                           ),
                                         ),
 
@@ -541,9 +499,9 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                                               '',
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.black54,
+                                            color: isDark ? Colors.white70 : Colors.black54,
                                           ),
                                         ),
                                       ],
@@ -554,9 +512,9 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
 
                                   Text(
                                     lesson['duration']?.toString() ?? '',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.black54,
+                                      color: isDark ? Colors.white70 : Colors.black54,
                                     ),
                                   ),
                                 ],

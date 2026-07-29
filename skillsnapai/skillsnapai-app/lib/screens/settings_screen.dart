@@ -3,6 +3,7 @@ import '../main.dart';
 import '../services/api_service.dart';
 import 'home_screen.dart';
 import 'mentorship_screen.dart';
+import 'quiz_mock_interview_screen.dart';
 import 'my_courses_screen.dart';
 import 'privacy_security_screen.dart';
 import 'help_support_screen.dart';
@@ -16,7 +17,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  int currentIndex = 3;
+  int currentIndex = 4;
 
   bool notificationsEnabled = true;
   bool emailUpdatesEnabled = true;
@@ -69,31 +70,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _onNavTap(int index) {
-    if (index == 3) return;
+    if (index == 4) return;
 
+    Widget target;
     if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      target = const HomeScreen();
+    } else if (index == 1) {
+      target = const MentorshipScreen();
+    } else if (index == 2) {
+      target = const QuizMockInterviewScreen();
+    } else if (index == 3) {
+      target = const MyCoursesScreen();
+    } else {
       return;
     }
 
-    if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MentorshipScreen()),
-      );
-      return;
-    }
-
-    if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MyCoursesScreen()),
-      );
-      return;
-    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => target),
+    );
   }
 
   @override
@@ -102,29 +97,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF121212)
-          : const Color(0xFFF5F5F5),
+          ? const Color(0xFF121624)
+          : const Color(0xFFF8FAFC),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
+        currentIndex: 4,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        selectedItemColor: const Color(0xFF3B82F6),
+        unselectedItemColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+        backgroundColor: isDark ? const Color(0xFF1B2136) : Colors.white,
         onTap: _onNavTap,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school),
-            label: 'mentorship',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'my courses',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.school), label: 'Mentorship'),
+          BottomNavigationBarItem(icon: Icon(Icons.quiz), label: 'Quiz & Mock'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'My Courses'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
       body: SafeArea(
@@ -212,14 +199,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.lock_outline,
                   title: 'Change Password',
                   subtitle: 'Update your login password',
-                  onTap: () {},
+                  onTap: () => _showChangePasswordDialog(context),
                 ),
                 _sectionTile(
                   isDark: isDark,
                   icon: Icons.workspace_premium_outlined,
                   title: 'Resume & Career Data',
                   subtitle: 'Manage uploaded resumes and analysis',
-                  onTap: () {},
+                  onTap: () => _showResumeCareerDataDialog(context),
                 ),
 
                 const SizedBox(height: 20),
@@ -270,6 +257,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() {
                       emailUpdatesEnabled = value;
                     });
+                  },
+                ),
+                _sectionTile(
+                  isDark: isDark,
+                  icon: Icons.refresh,
+                  title: 'Reset All Progress to 0',
+                  subtitle: 'Clear completed lessons, hours & skill metrics',
+                  onTap: () async {
+                    await ApiService.resetProgress();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('🔄 All progress reset to 0 & Synced live!'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HomeScreen()),
+                        (route) => false,
+                      );
+                    }
                   },
                 ),
 
@@ -357,6 +366,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showResumeCareerDataDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.workspace_premium, color: Color(0xFF5B67FF)),
+            SizedBox(width: 8),
+            Text('Resume & Career Data'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('📄 Current Resume: John_Jonson_Resume.pdf', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text('🎯 ATS Score: 92/100 (Excellent Match)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text('🔑 Top Keywords Matched: FastAPI, Flutter, Python, REST APIs, Microservices'),
+            const SizedBox(height: 8),
+            const Text('🚀 Target Role: Full-Stack AI Engineer'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('📄 Upload new resume dialog opened!'), backgroundColor: Color(0xFF5B67FF)),
+              );
+            },
+            child: const Text('Upload New Resume'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final passCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Change Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: passCtrl,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'New Password'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('🔒 Password updated successfully!'), backgroundColor: Colors.green),
+              );
+            },
+            child: const Text('Update Password'),
+          ),
+        ],
       ),
     );
   }

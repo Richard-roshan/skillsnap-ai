@@ -1,8 +1,9 @@
+
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
 
 final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(
-  ThemeMode.light,
+  ThemeMode.dark,
 );
 
 void toggleThemeMode() {
@@ -31,7 +32,8 @@ class SkillSnapAI extends StatelessWidget {
           theme: ThemeData(
             brightness: Brightness.light,
             primarySwatch: Colors.blue,
-            scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+            scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+            cardColor: Colors.white,
 
             appBarTheme: const AppBarTheme(
               backgroundColor: Colors.white,
@@ -41,8 +43,8 @@ class SkillSnapAI extends StatelessWidget {
 
             bottomNavigationBarTheme: const BottomNavigationBarThemeData(
               backgroundColor: Colors.white,
-              selectedItemColor: Colors.blue,
-              unselectedItemColor: Colors.grey,
+              selectedItemColor: Color(0xFF3B82F6),
+              unselectedItemColor: Color(0xFF64748B),
             ),
           ),
 
@@ -50,18 +52,19 @@ class SkillSnapAI extends StatelessWidget {
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: Colors.blue,
-            scaffoldBackgroundColor: const Color(0xFF121212),
+            scaffoldBackgroundColor: const Color(0xFF121624),
+            cardColor: const Color(0xFF1B2136),
 
             appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF1E1E1E),
+              backgroundColor: Color(0xFF1B2136),
               foregroundColor: Colors.white,
               elevation: 0,
             ),
 
             bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-              backgroundColor: Color(0xFF1E1E1E),
-              selectedItemColor: Colors.blue,
-              unselectedItemColor: Colors.grey,
+              backgroundColor: Color(0xFF1B2136),
+              selectedItemColor: Color(0xFF3B82F6),
+              unselectedItemColor: Color(0xFF94A3B8),
             ),
           ),
 

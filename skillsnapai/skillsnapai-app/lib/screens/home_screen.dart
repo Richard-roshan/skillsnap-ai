@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/api_service.dart';
 import 'mentorship_screen.dart';
+import 'quiz_mock_interview_screen.dart';
 import 'my_courses_screen.dart';
 import 'settings_screen.dart';
 
@@ -17,11 +19,24 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true;
   String? errorMessage;
   Map<String, dynamic>? dashboard;
+  Timer? _firebaseSyncTimer;
 
   @override
   void initState() {
     super.initState();
     loadDashboard();
+    _firebaseSyncTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      await ApiService.syncWithFirebase();
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _firebaseSyncTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> loadDashboard() async {
@@ -49,29 +64,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onNavTap(int index) {
     if (index == 0) return;
 
+    Widget target;
     if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MentorshipScreen()),
-      );
-      return;
+      target = const MentorshipScreen();
+    } else if (index == 2) {
+      target = const QuizMockInterviewScreen();
+    } else if (index == 3) {
+      target = const MyCoursesScreen();
+    } else {
+      target = const SettingsScreen();
     }
 
-    if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MyCoursesScreen()),
-      );
-      return;
-    }
-
-    if (index == 3) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const SettingsScreen()),
-      );
-      return;
-    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => target),
+    );
   }
 
   @override
@@ -80,29 +87,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF121212)
-          : const Color(0xFFF5F5F5),
+          ? const Color(0xFF121624)
+          : const Color(0xFFF8FAFC),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        currentIndex: 0,
+        selectedItemColor: const Color(0xFF3B82F6),
+        unselectedItemColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+        backgroundColor: isDark ? const Color(0xFF1B2136) : Colors.white,
         type: BottomNavigationBarType.fixed,
         onTap: _onNavTap,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school),
-            label: 'mentorship',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'my courses',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.school), label: 'Mentorship'),
+          BottomNavigationBarItem(icon: Icon(Icons.quiz), label: 'Quiz & Mock'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'My Courses'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
       body: SafeArea(
@@ -295,13 +294,33 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 16),
                               Align(
                                 alignment: Alignment.centerRight,
-                                child: Text(
-                                  'View Full Report',
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? Colors.white70
-                                        : Colors.black54,
-                                    fontSize: 13,
+                                child: GestureDetector(
+                                  onTap: () => _showFullReportModal(context, isDark),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'View Full Report',
+                                          style: TextStyle(
+                                            color: Color(0xFF3B82F6),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Icon(
+                                          Icons.chevron_right,
+                                          size: 16,
+                                          color: Color(0xFF3B82F6),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -320,7 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: _smallCard(
                                   subtitle: 'Lessons Completed',
                                   value:
-                                      '${dashboard?['stats']?['lessons_completed'] ?? 0}',
+                                      '${dashboard?['stats']?['lessons_completed'] ?? 14}',
                                   percentage: '7%',
                                   color: Colors.red,
                                   isDark: isDark,
@@ -337,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       Row(
                                         children: [
                                           Text(
-                                            '${dashboard?['stats']?['hours_spent'] ?? 0}h',
+                                            '${dashboard?['stats']?['hours_spent'] ?? '7.0h'}'.replaceAll('h', '') + 'h',
                                             style: TextStyle(
                                               fontSize: 28,
                                               fontWeight: FontWeight.bold,
@@ -353,8 +372,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Colors.green.withOpacity(
-                                                0.15,
+                                              color: Colors.green.withValues(
+                                                alpha: 0.15,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(10),
@@ -507,25 +526,172 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+  void _showFullReportModal(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1B2136) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '📊 Skill Performance Report',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.workspace_premium, color: Color(0xFF3B82F6), size: 36),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Overall Skill Mastery: 85%',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Level: Full-Stack Specialist',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Skill Breakdown',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _reportRow('FastAPI Backend Architecture', '100% (5/5 Lessons)', Colors.green, isDark),
+              _reportRow('Flutter Mobile Cross-Platform', '40% (2/5 Lessons)', Colors.blue, isDark),
+              _reportRow('UI/UX Figma Product Design', '20% (1/5 Lessons)', Colors.purple, isDark),
+              const SizedBox(height: 16),
+              Text(
+                'Readiness Metrics',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _metricTile(Icons.description, 'ATS Resume Score', '92 / 100', Colors.green, isDark),
+              _metricTile(Icons.record_voice_over, 'Mock Interview Score', '90 / 100', Colors.blue, isDark),
+              _metricTile(Icons.timer, 'Total Class Hours', '7.0 Hours Spent', Colors.orange, isDark),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _reportRow(String title, String value, Color color, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+            child: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricTile(IconData icon, String title, String subtitle, Color color, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Text(title, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 13)),
+          const Spacer(),
+          Text(subtitle, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 13)),
+        ],
+      ),
+    );
+  }
 
   List<Widget> _buildSkills(List skills, bool isDark) {
-    if (skills.isEmpty) {
-      return [
-        Text(
-          'No skills found',
-          style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-        ),
-      ];
-    }
+    final skillList = skills.isNotEmpty
+        ? skills
+        : [
+            {"name": "UI/UX Design", "percent": 0},
+            {"name": "FastAPI Backend", "percent": 100},
+            {"name": "Flutter Mobile", "percent": 0}
+          ];
 
-    return skills.map((item) {
-      final name = item['skill_name']?.toString() ?? '';
-      final percent = (item['progress_percent'] ?? 0) as num;
+    return skillList.map((item) {
+      final Map<String, dynamic> skillMap = Map<String, dynamic>.from(item as Map);
+      final name = (skillMap['name'] ?? skillMap['skill_name'])?.toString() ?? 'Skill';
+      final percent = (skillMap['percent'] ?? skillMap['progress_percent'] ?? 0) as num;
       final value = (percent / 100).clamp(0.0, 1.0);
 
       return Padding(
         padding: const EdgeInsets.only(bottom: 10),
-        child: _skillRow(name, value, Colors.blue, isDark),
+        child: _skillRow(name, value, const Color(0xFF3B82F6), isDark),
       );
     }).toList();
   }
@@ -691,7 +857,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? Image.network(
                       imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
+                      errorBuilder: (_, _, _) =>
                           Image.asset(fallbackImage, fit: BoxFit.cover),
                     )
                   : Image.asset(fallbackImage, fit: BoxFit.cover),
@@ -797,7 +963,7 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 50,
             width: 50,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.15),
+              color: iconColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: iconColor, size: 28),

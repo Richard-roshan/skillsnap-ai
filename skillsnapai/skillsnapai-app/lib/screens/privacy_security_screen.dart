@@ -58,7 +58,7 @@ class PrivacySecurityScreen extends StatelessWidget {
             height: 44,
             width: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF5B67FF).withOpacity(0.12),
+              color: const Color(0xFF5B67FF).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: const Color(0xFF5B67FF)),
