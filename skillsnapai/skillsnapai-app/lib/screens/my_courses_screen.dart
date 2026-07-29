@@ -105,6 +105,11 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
   }
 
   void selectLesson(Map<String, dynamic> lesson) {
+    // Automatically track progress & sync live to Firebase in background
+    ApiService.lessonsCompleted += 1;
+    ApiService.hoursSpent = double.parse((ApiService.hoursSpent + 0.25).toStringAsFixed(1));
+    ApiService.updateFirebase();
+
     final rawUrl = lesson['video_url'] as String? ?? 'tLKKmouUams';
     String videoId = rawUrl;
     if (videoId.contains('v=')) {
