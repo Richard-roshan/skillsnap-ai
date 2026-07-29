@@ -9,16 +9,16 @@
   <!-- CSS Stylesheet -->
   <link rel="stylesheet" href="styles.css">
   
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Firebase Web SDK Compat -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
 <body>
   <!-- Toast Notification Container -->
@@ -27,7 +27,7 @@
   <div class="app-container">
     <!-- GOOGLE PIXEL 5 STATUS BAR -->
     <div class="pixel-5-status-bar">
-      <span>9:41</span>
+      <span>5:35</span>
       <div style="display:flex; gap:0.4rem; align-items:center;">
         <i data-lucide="wifi" style="width:13px; height:13px;"></i>
         <i data-lucide="signal" style="width:13px; height:13px;"></i>
@@ -39,7 +39,7 @@
     <header class="navbar">
       <div class="brand-section" onclick="switchTab('dashboard')">
         <img src="assets/images/logo.png" alt="SkillSnap AI" class="brand-logo" onerror="this.src='assets/images/robot.png'">
-        <span class="brand-title">SkillSnap<span style="color:var(--accent-pink);">AI</span></span>
+        <span class="brand-title">SkillSnap<span style="color:var(--accent-primary);">AI</span></span>
       </div>
 
       <div class="nav-center">
@@ -56,6 +56,10 @@
       </div>
 
       <div class="nav-right">
+        <button class="icon-btn" id="reset-progress-btn" title="Reset All User Progress to 0" onclick="resetUserProgressWeb()" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);">
+          <i data-lucide="rotate-ccw"></i>
+        </button>
+
         <button class="icon-btn" id="pixel5-toggle-btn" title="Toggle Google Pixel 5 Viewport Mode" onclick="togglePixel5Mode()" style="background:rgba(59,130,246,0.15); color:var(--accent-primary); border:1px solid rgba(59,130,246,0.3);">
           <i data-lucide="smartphone"></i>
         </button>
@@ -69,7 +73,7 @@
           <span class="notification-badge"></span>
         </button>
 
-        <div class="user-profile">
+        <div class="user-profile" onclick="switchTab('settings')">
           <img src="assets/images/avatar.png" alt="John Jonson" class="user-avatar" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'">
           <div class="user-info">
             <span class="user-greeting">Hello</span>
@@ -79,616 +83,723 @@
       </div>
     </header>
 
-    <!-- Navigation Tabs - MOBILE BOTTOM NAVIGATION BAR -->
+    <!-- Navigation Tabs (Matching 5 Mobile Tabs) -->
     <nav class="tabs-nav">
       <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">
-        <i data-lucide="layout-dashboard"></i>
-        <span>Home</span>
+        <i data-lucide="home"></i> Home
       </button>
       <button class="tab-btn" id="tab-mentorship" onclick="switchTab('mentorship')">
-        <i data-lucide="file-text"></i>
-        <span>Resume</span>
-      </button>
-      <button class="tab-btn" id="tab-courses" onclick="switchTab('courses')">
-        <i data-lucide="book-open"></i>
-        <span>Courses</span>
+        <i data-lucide="graduation-cap"></i> Mentorship
       </button>
       <button class="tab-btn" id="tab-interviews" onclick="switchTab('interviews')">
-        <i data-lucide="mic"></i>
-        <span>Interview</span>
+        <i data-lucide="help-circle"></i> Quiz & Mock
+      </button>
+      <button class="tab-btn" id="tab-courses" onclick="switchTab('courses')">
+        <i data-lucide="book-open"></i> My Courses
       </button>
       <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')">
-        <i data-lucide="settings"></i>
-        <span>Settings</span>
+        <i data-lucide="settings"></i> Settings
       </button>
     </nav>
 
-    <!-- TAB 1: DASHBOARD -->
+    <!-- TAB 1: HOME & DASHBOARD (Matching Photo 2) -->
     <main id="view-dashboard" class="tab-content active">
       <div class="dashboard-grid">
-        <!-- Left Column -->
-        <div class="main-column">
-          <!-- Skills Breakdown Card -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i data-lucide="zap" style="color:var(--accent-orange);"></i> Skills Overview</h3>
-              <div>
-                <button class="btn-primary" style="padding:0.35rem 0.85rem; font-size:0.8rem; margin-right:0.5rem;" onclick="startSkillQuiz()">
-                  <i data-lucide="award"></i> Take Skill Quiz
-                </button>
-                <a class="card-link" onclick="switchTab('mentorship')">View Report</a>
-              </div>
-            </div>
-            
-            <div class="skill-item">
-              <div class="skill-info">
-                <span>UI/UX Design</span>
-                <span id="skill-val-uiux" style="color: var(--accent-brown);">90%</span>
-              </div>
-              <div class="skill-bar-bg">
-                <div class="skill-bar-fill" id="skill-bar-uiux" style="width: 90%; background: var(--accent-brown);"></div>
-              </div>
-            </div>
-
-            <div class="skill-item">
-              <div class="skill-info">
-                <span>Visual & Frontend Design</span>
-                <span id="skill-val-design" style="color: var(--accent-orange);">60%</span>
-              </div>
-              <div class="skill-bar-bg">
-                <div class="skill-bar-fill" id="skill-bar-design" style="width: 60%; background: var(--accent-orange);"></div>
-              </div>
-            </div>
-
-            <div class="skill-item">
-              <div class="skill-info">
-                <span>Management & Strategy</span>
-                <span id="skill-val-mgmt" style="color: var(--accent-purple);">30%</span>
-              </div>
-              <div class="skill-bar-bg">
-                <div class="skill-bar-fill" id="skill-bar-mgmt" style="width: 30%; background: var(--accent-purple);"></div>
-              </div>
+        <!-- Top Profile & Search Card -->
+        <div class="profile-header-card">
+          <div class="profile-header-left">
+            <img src="assets/images/avatar.png" alt="John Jonson" class="avatar-lg" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'">
+            <div>
+              <span class="greeting-sub">Hello</span>
+              <h2 class="user-title">John Jonson</h2>
             </div>
           </div>
-
-          <!-- Stats Row (Lessons & Hours Spent) -->
-          <div class="stats-row">
-            <div class="stat-box">
-              <div class="stat-number-wrapper">
-                <span class="stat-number" id="stat-lessons-val">10</span>
-                <span class="stat-badge red">7% target</span>
-              </div>
-              <span class="stat-label">Lessons Completed</span>
-            </div>
-
-            <div class="stat-box">
-              <div class="stat-number-wrapper">
-                <span class="stat-number">50h</span>
-                <span class="stat-badge green">↑ 12%</span>
-              </div>
-              <span class="stat-label">Hours Spent on Classes</span>
-              
-              <div style="margin-top: 1rem;">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
-                  <span>Design</span>
-                  <span>50%</span>
-                </div>
-                <div class="skill-bar-bg" style="height:6px; margin-bottom:0.6rem;">
-                  <div class="skill-bar-fill" style="width:50%; background:var(--accent-green);"></div>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
-                  <span>Management</span>
-                  <span>12%</span>
-                </div>
-                <div class="skill-bar-bg" style="height:6px;">
-                  <div class="skill-bar-fill" style="width:12%; background:var(--accent-purple);"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Analytics Chart Card -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i data-lucide="bar-chart-3" style="color:var(--accent-primary);"></i> Study Activity Analytics</h3>
-              <span style="font-size:0.85rem; color:var(--text-muted);">Weekly View</span>
-            </div>
-            <div style="height: 240px; width: 100%;">
-              <canvas id="hoursChart"></canvas>
-            </div>
+          <div class="profile-header-actions">
+            <button class="assistant-btn-gradient" onclick="toggleChatModal()">
+              <span>Assistant</span>
+              <i data-lucide="bot"></i>
+            </button>
+            <button class="icon-btn-circle" onclick="toggleTheme()">
+              <i data-lucide="moon"></i>
+            </button>
+            <button class="icon-btn-circle" onclick="showToast('No new notifications!', 'info')">
+              <i data-lucide="bell"></i>
+            </button>
           </div>
         </div>
 
-        <!-- Right Column Sidebar -->
-        <div class="side-column">
-          <!-- Recommended Courses Header -->
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-            <h3 style="font-size:1.2rem; font-weight:700;">Courses</h3>
-            <a class="card-link" onclick="switchTab('courses')">View all</a>
-          </div>
-
-          <div class="courses-grid" style="grid-template-columns: 1fr; margin-bottom: 1.5rem;">
-            <!-- Course 1 -->
-            <div class="course-card">
-              <img src="assets/images/course1.jpg" alt="Full Stack Developer" class="course-thumb" onerror="this.src='https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80'">
-              <div class="course-body">
-                <span class="course-tag">AI Suggested</span>
-                <h4 class="course-title">Full Stack Developer</h4>
-                <p class="course-sub">10 Lessons • Web & API Architecture</p>
-                <div class="course-meta">
-                  <span>⭐ 4.5 Rating</span>
-                  <button class="btn-primary" onclick="openCoursePlayer(1)">Preview</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Course 2 -->
-            <div class="course-card">
-              <img src="assets/images/course2.jpg" alt="Career Readiness" class="course-thumb" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=600&q=80'">
-              <div class="course-body">
-                <span class="course-tag" style="background:rgba(236,72,153,0.15); color:var(--accent-pink);">Career Readiness</span>
-                <h4 class="course-title">Digital Marketing & Growth</h4>
-                <p class="course-sub">14 Lessons • Strategy & SEO</p>
-                <div class="course-meta">
-                  <span>⭐ 4.8 Rating</span>
-                  <button class="btn-primary" style="background:var(--accent-pink);" onclick="openCoursePlayer(2)">Start</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Course 3 -->
-            <div class="course-card">
-              <img src="https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&w=600&q=80" alt="UI/UX Mobile Design" class="course-thumb" onerror="this.src='https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&w=600&q=80'">
-              <div class="course-body">
-                <span class="course-tag" style="background:rgba(16,185,129,0.15); color:var(--accent-green);">UI/UX & Mobile</span>
-                <h4 class="course-title">UI/UX & Mobile Design</h4>
-                <p class="course-sub">12 Lessons • Figma & Flutter UI</p>
-                <div class="course-meta">
-                  <span>⭐ 4.9 Rating</span>
-                  <button class="btn-primary" style="background:var(--accent-green);" onclick="openCoursePlayer(3)">Explore</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Career Paths Matches -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title" style="font-size:1.1rem;"><i data-lucide="compass" style="color:var(--accent-secondary);"></i> Career Matches</h3>
-            </div>
-            
-            <div class="career-match-card">
-              <div class="career-info">
-                <h4>Full Stack Engineer</h4>
-                <p>High Demand • Tech</p>
-              </div>
-              <span class="match-ring">94%</span>
-            </div>
-
-            <div class="career-match-card">
-              <div class="career-info">
-                <h4>Product Designer</h4>
-                <p>Very High Demand • UI/UX</p>
-              </div>
-              <span class="match-ring">88%</span>
-            </div>
-
-            <div class="career-match-card">
-              <div class="career-info">
-                <h4>Engineering Lead</h4>
-                <p>Medium Demand • Mgmt</p>
-              </div>
-              <span class="match-ring" style="color:var(--accent-orange); background:rgba(245,158,11,0.12);">82%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- TAB 2: MENTORSHIP, RESUME ATS & RESUME BUILDER HUB -->
-    <main id="view-mentorship" class="tab-content">
-      <!-- Sub Navigation Pills -->
-      <div class="sub-nav-pills">
-        <button class="sub-pill-btn active" id="subpill-ats" onclick="switchResumeMode('ats')">
-          <i data-lucide="sparkles"></i> ATS Analyzer
-        </button>
-        <button class="sub-pill-btn" id="subpill-builder" onclick="switchResumeMode('builder')">
-          <i data-lucide="pen-tool"></i> AI Resume Builder & PDF Export
-        </button>
-      </div>
-
-      <!-- MODE 1: ATS ANALYZER -->
-      <div id="mode-resume-ats" class="resume-hub-grid">
-        <!-- Upload/Paste Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title"><i data-lucide="file-check-2" style="color:var(--accent-green);"></i> ATS Resume Optimization Studio</h3>
-            <span class="stat-badge green">AI Powered</span>
-          </div>
-
-          <div class="upload-area" onclick="document.getElementById('resume-file-input').click()">
-            <div class="upload-icon">
-              <i data-lucide="upload-cloud" style="width:28px; height:28px;"></i>
-            </div>
-            <h4>Upload your Resume (PDF/DOCX)</h4>
-            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:0.25rem;">Or paste resume text below for instant ATS analysis</p>
-            <input type="file" id="resume-file-input" style="display:none" onchange="handleResumeUpload(event)">
-          </div>
-
-          <textarea class="textarea-custom" id="resume-text-input" placeholder="Paste your resume content here (e.g. Work experience, skills, education)..."></textarea>
-
-          <button class="btn-primary" style="width:100%; margin-top:1rem;" onclick="analyzeResumeText()">
-            <i data-lucide="sparkles"></i> Run ATS AI Analysis
+        <!-- Search Bar -->
+        <div class="mobile-search-bar">
+          <i data-lucide="search"></i>
+          <input type="text" placeholder="Search..." oninput="handleSearch(this.value)">
+          <button class="assistant-pill-btn" onclick="toggleChatModal()">
+            Assistant 🤖
           </button>
         </div>
 
-        <!-- ATS Score Card & Suggestions -->
-        <div class="card" id="ats-results-card">
+        <!-- Skills Card (Matching Photo 2) -->
+        <div class="card skills-card">
           <div class="card-header">
-            <h3 class="card-title"><i data-lucide="award" style="color:var(--accent-primary);"></i> ATS Match Report</h3>
-            <span class="stat-badge green" id="overall-ats-badge">Score: 85/100</span>
+            <h3>Skills</h3>
           </div>
+          <div class="skills-list">
+            <div class="skill-item">
+              <div class="skill-info">
+                <span>UI/UX Design</span>
+                <span id="skill-val-uiux">0%</span>
+              </div>
+              <div class="skill-bar-bg">
+                <div class="skill-bar-fill" id="skill-bar-uiux" style="width: 0%;"></div>
+              </div>
+            </div>
 
-          <div class="score-meter-container">
-            <div class="score-box">
-              <span class="score-val" id="score-ats">85%</span>
-              <span class="score-lbl">ATS Keyword Match</span>
+            <div class="skill-item">
+              <div class="skill-info">
+                <span>FastAPI Backend</span>
+                <span id="skill-val-design">0%</span>
+              </div>
+              <div class="skill-bar-bg">
+                <div class="skill-bar-fill" id="skill-bar-design" style="width: 0%;"></div>
+              </div>
             </div>
-            <div class="score-box">
-              <span class="score-val" id="score-grammar" style="color:var(--accent-green);">92%</span>
-              <span class="score-lbl">Grammar & Tone</span>
-            </div>
-            <div class="score-box">
-              <span class="score-val" id="score-keywords" style="color:var(--accent-orange);">78%</span>
-              <span class="score-lbl">Skill Alignment</span>
-            </div>
-            <div class="score-box">
-              <span class="score-val" id="score-formatting" style="color:var(--accent-purple);">90%</span>
-              <span class="score-lbl">Format Structure</span>
+
+            <div class="skill-item">
+              <div class="skill-info">
+                <span>Flutter Mobile</span>
+                <span id="skill-val-mgmt">0%</span>
+              </div>
+              <div class="skill-bar-bg">
+                <div class="skill-bar-fill" id="skill-bar-mgmt" style="width: 0%;"></div>
+              </div>
             </div>
           </div>
-
-          <div style="margin-top:1.25rem;">
-            <h4 style="font-size:0.95rem; font-weight:700; color:var(--accent-green); margin-bottom:0.5rem;">
-              <i data-lucide="check-circle" style="width:16px; height:16px;"></i> Strengths:
-            </h4>
-            <p id="ats-strengths" style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:1rem;">
-              Strong technical experience in Full-Stack web development, clean project layout, and excellent action verb usage.
-            </p>
-
-            <h4 style="font-size:0.95rem; font-weight:700; color:var(--accent-orange); margin-bottom:0.5rem;">
-              <i data-lucide="alert-triangle" style="width:16px; height:16px;"></i> Recommendations to hit 95%+:
-            </h4>
-            <p id="ats-suggestions" style="font-size:0.88rem; color:var(--text-secondary);">
-              Add specific metric achievements (e.g., "Improved page load speed by 35%"), include Cloud architecture keywords (AWS/Docker), and align management experience phrasing.
-            </p>
+          <div class="card-footer-right">
+            <a href="#" onclick="openFullReportModal(); return false;" class="text-link">View Full Report</a>
           </div>
         </div>
-      </div>
 
-      <!-- MODE 2: AI RESUME BUILDER & PDF EXPORTER -->
-      <div id="mode-resume-builder" class="resume-hub-grid" style="display:none;">
-        <!-- Left: Resume Form Editor -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title"><i data-lucide="edit-3" style="color:var(--accent-secondary);"></i> Resume Editor</h3>
-            <button class="btn-primary" style="padding:0.35rem 0.85rem; font-size:0.8rem;" onclick="generateAISummary()">
-              <i data-lucide="sparkles"></i> AI Summary Auto-Fill
-            </button>
+        <!-- Stats Row (Lessons Completed & Hours Spent - Matching Photo 2) -->
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-badge-top red">● 7%</div>
+            <div class="stat-number-wrapper">
+              <span class="stat-number-lg" id="stat-lessons-val">0</span>
+            </div>
+            <span class="stat-label">Lessons Completed</span>
           </div>
 
-          <div style="display:flex; flex-direction:column; gap:0.85rem;">
-            <div>
-              <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Full Name</label>
-              <input type="text" id="builder-name" value="John Jonson" class="search-box" style="padding-left:1rem;" oninput="updateResumePreview()">
+          <div class="stat-box">
+            <div class="stat-badge-top green">↑ 12%</div>
+            <div class="stat-number-wrapper">
+              <span class="stat-number-lg" id="stat-hours-val">0h</span>
             </div>
+            <span class="stat-label">Hours spent on classes</span>
 
-            <div>
-              <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Target Job Title</label>
-              <input type="text" id="builder-title" value="Full Stack & UI/UX Engineer" class="search-box" style="padding-left:1rem;" oninput="updateResumePreview()">
-            </div>
-
-            <div>
-              <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Email & Phone & Location</label>
-              <input type="text" id="builder-contact" value="john.jonson@skillsnap.ai | +1 (555) 019-2834 | San Francisco, CA" class="search-box" style="padding-left:1rem;" oninput="updateResumePreview()">
-            </div>
-
-            <div>
-              <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Professional Summary</label>
-              <textarea id="builder-summary" class="textarea-custom" style="height:90px;" oninput="updateResumePreview()">Innovative Full Stack Developer with 4+ years of experience designing scalable REST APIs, responsive web UIs, and AI-driven skill platforms.</textarea>
-            </div>
-
-            <div>
-              <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Work Experience Highlights</label>
-              <textarea id="builder-experience" class="textarea-custom" style="height:100px;" oninput="updateResumePreview()">• Senior Frontend Developer @ TechCore (2023 - Present): Engineered dynamic dashboard components improving user engagement by 32%.
-• Full Stack Developer @ DataStream (2021 - 2023): Built FastAPI microservices serving 100k+ daily API requests.</textarea>
-            </div>
-
-            <div>
-              <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Skills & Frameworks</label>
-              <input type="text" id="builder-skills" value="JavaScript, Python, React, FastAPI, Flutter, UI/UX Design, Docker, SQL" class="search-box" style="padding-left:1rem;" oninput="updateResumePreview()">
+            <div class="mini-breakdown-list">
+              <div class="mini-breakdown-item">
+                <span>Design</span>
+                <div class="mini-bar-bg"><div class="mini-bar-fill green" style="width:40%;"></div></div>
+              </div>
+              <div class="mini-breakdown-item">
+                <span>Management</span>
+                <div class="mini-bar-bg"><div class="mini-bar-fill purple" style="width:35%;"></div></div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Right: Live Printable Resume Preview Sheet -->
-        <div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-            <h3 style="font-size:1.1rem; font-weight:700;">Live Resume Preview</h3>
-            <button class="btn-primary" style="background:var(--accent-green);" onclick="printResumePDF()">
-              <i data-lucide="printer"></i> Export / Print PDF
-            </button>
+        <!-- Courses Section (Matching Photo 2) -->
+        <div class="card courses-card">
+          <div class="card-header flex-between">
+            <h3>Courses</h3>
+            <a href="#" onclick="switchTab('courses'); return false;" class="text-link">View all</a>
           </div>
-
-          <div class="resume-preview-sheet" id="resume-preview-sheet">
-            <h1 id="pv-name">John Jonson</h1>
-            <h4 id="pv-title" style="color:#2563eb; font-weight:600; margin-bottom:0.4rem;">Full Stack & UI/UX Engineer</h4>
-            <div class="contact-line" id="pv-contact">john.jonson@skillsnap.ai | +1 (555) 019-2834 | San Francisco, CA</div>
-
-            <h3>Professional Summary</h3>
-            <p id="pv-summary">Innovative Full Stack Developer with 4+ years of experience designing scalable REST APIs, responsive web UIs, and AI-driven skill platforms.</p>
-
-            <h3>Work Experience</h3>
-            <div id="pv-experience" style="white-space: pre-line;">
-• Senior Frontend Developer @ TechCore (2023 - Present): Engineered dynamic dashboard components improving user engagement by 32%.
-• Full Stack Developer @ DataStream (2021 - 2023): Built FastAPI microservices serving 100k+ daily API requests.
-            </div>
-
-            <h3>Core Skills & Technologies</h3>
-            <p id="pv-skills">JavaScript, Python, React, FastAPI, Flutter, UI/UX Design, Docker, SQL</p>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- TAB 3: MY COURSES & VIDEO PLAYER VIEW -->
-    <main id="view-courses" class="tab-content">
-      <div class="player-wrapper">
-        <!-- Main Video & Lesson Content -->
-        <div>
-          <div class="video-container" id="video-player-frame" style="position:relative; width:100%; height:380px; border-radius:var(--radius-md); overflow:hidden; background:#0f172a; border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center;">
-            <iframe id="main-course-iframe" src="https://www.youtube-nocookie.com/embed/Ke90Tje7VS0?autoplay=0&rel=0" title="Course Lesson Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="width:100%; height:100%; border:none; display:block;"></iframe>
-            <div id="video-overlay-bar" style="position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; background:rgba(15,23,42,0.85); padding:0.6rem 1rem; backdrop-filter:blur(8px); pointer-events:none; border-top:1px solid rgba(255,255,255,0.1);">
-              <span id="player-title" style="font-weight:700; font-size:0.9rem; color:#fff;">1. Introduction to Full Stack Architecture</span>
-              <span id="player-time" style="font-size:0.82rem; color:var(--accent-primary); font-weight:600; background:rgba(99,102,241,0.15); padding:0.2rem 0.6rem; border-radius:var(--radius-full);">Duration: 12:30</span>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:1.5rem;">
-            <h2 id="lesson-header-title">Full Stack Developer Masterclass</h2>
-            <p id="lesson-desc" style="color:var(--text-secondary); margin-top:0.5rem; font-size:0.95rem; line-height:1.6;">
-              Learn modern full-stack web application architecture, REST API design, state management, and real-time database synchronization with hands-on practice.
-            </p>
-            
-            <div style="display:flex; gap:1rem; margin-top:1.25rem;">
-              <button class="btn-primary" onclick="showToast('Resource files downloaded successfully!', 'success')">
-                <i data-lucide="download"></i> Download Source Files
-              </button>
-              <button class="btn-primary" style="background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color);" onclick="markLessonComplete()">
-                <i data-lucide="check"></i> Mark Complete
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Lessons Syllabus Drawer -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title" style="font-size:1.1rem;"><i data-lucide="list" style="color:var(--accent-primary);"></i> Course Syllabus</h3>
-            <span style="font-size:0.8rem; color:var(--text-muted);">4 Lessons</span>
-          </div>
-
-          <div class="lesson-list">
-            <div class="lesson-item active" onclick="selectLesson(1, '1. Introduction to Full Stack Architecture', '12:30', 'Learn modern architecture patterns and client-server setups.', 'Ke90Tje7VS0')">
-              <div>
-                <h5 style="font-size:0.9rem; font-weight:700;">1. Full Stack Intro</h5>
-                <span style="font-size:0.78rem; color:var(--text-secondary);">12:30 • Free Preview</span>
+          <div class="courses-grid-2col">
+            <div class="course-mini-card" onclick="switchTab('courses')">
+              <img src="assets/images/course1.jpg" alt="Advanced FastAPI Architecture" onerror="this.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80'">
+              <div class="course-mini-info">
+                <h4>Advanced FastAPI Architecture</h4>
+                <p>Master Backend Development</p>
+                <span class="course-tag">Continue</span>
               </div>
-              <i data-lucide="play-circle" style="color:var(--accent-primary);"></i>
             </div>
 
-            <div class="lesson-item" onclick="selectLesson(2, '2. Database Modeling & Fast APIs', '18:45', 'Design relational schemas, SQL queries, and FastAPI endpoints.', 'SqcY0GlETPk')">
-              <div>
-                <h5 style="font-size:0.9rem; font-weight:700;">2. Database & APIs</h5>
-                <span style="font-size:0.78rem; color:var(--text-secondary);">18:45 • Core</span>
+            <div class="course-mini-card" onclick="switchTab('courses')">
+              <img src="assets/images/course2.jpg" alt="Flutter Cross-Platform Mastery" onerror="this.src='https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=400&q=80'">
+              <div class="course-mini-info">
+                <h4>Flutter Cross-Platform Mastery</h4>
+                <p>Build iOS & Android Apps</p>
+                <span class="course-tag">Start</span>
               </div>
-              <i data-lucide="lock" style="font-size:14px; color:var(--text-muted);"></i>
-            </div>
-
-            <div class="lesson-item" onclick="selectLesson(3, '3. Frontend State & UI Components', '22:10', 'Build dynamic UI components, state stores, and glassmorphism styling.', 'O6P86uwfdR0')">
-              <div>
-                <h5 style="font-size:0.9rem; font-weight:700;">3. Frontend & State</h5>
-                <span style="font-size:0.78rem; color:var(--text-secondary);">22:10 • Advanced</span>
-              </div>
-              <i data-lucide="lock" style="font-size:14px; color:var(--text-muted);"></i>
-            </div>
-
-            <div class="lesson-item" onclick="selectLesson(4, '4. Deployment & Cloud CI/CD', '15:00', 'Deploy full-stack applications with automated testing and HTTPS.', 'VPvVD8t02U8')">
-              <div>
-                <h5 style="font-size:0.9rem; font-weight:700;">4. Deployment & Cloud</h5>
-                <span style="font-size:0.78rem; color:var(--text-secondary);">15:00 • Master</span>
-              </div>
-              <i data-lucide="lock" style="font-size:14px; color:var(--text-muted);"></i>
             </div>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- TAB 4: AI MOCK INTERVIEW STUDIO -->
+    <!-- TAB 2: MENTORSHIP & CAREER BUILDER (Matching Photo 1) -->
+    <main id="view-mentorship" class="tab-content">
+      <div class="mentorship-container">
+        <!-- Header -->
+        <div class="mentorship-header">
+          <div class="header-left-brand">
+            <div class="briefcase-icon-box">
+              <i data-lucide="briefcase"></i>
+            </div>
+            <div>
+              <h2>Career Builder</h2>
+              <p>Your AI Career Guide</p>
+            </div>
+          </div>
+          <button class="icon-btn-circle" onclick="showToast('No new notifications!', 'info')">
+            <i data-lucide="bell"></i>
+          </button>
+        </div>
+
+        <!-- Ask AI Input Box (Matching Photo 1) -->
+        <div class="ask-mentor-box">
+          <i data-lucide="sparkles" class="sparkle-icon"></i>
+          <input type="text" id="mentor-query-input" placeholder="Ask your Career Mentor....">
+          <button class="ask-btn-pill" onclick="handleMentorAsk()">
+            <i data-lucide="sparkles"></i> Ask
+          </button>
+        </div>
+
+        <!-- Resume Builder Card with Score Circle (Matching Photo 1) -->
+        <div class="card resume-builder-card">
+          <div class="resume-card-left">
+            <h3>Resume Builder</h3>
+            <span class="file-name-tag">John_Jonson_Resume.pdf</span>
+            <div class="resume-btn-group">
+              <button class="btn-primary-blue" onclick="openResumeBuilderModal()">Create New Resume</button>
+              <button class="btn-outline-blue" onclick="triggerResumeUpload()">Upload Resume</button>
+              <input type="file" id="resume-file-input" style="display:none" onchange="handleResumeFileSelected(this)">
+            </div>
+          </div>
+
+          <div class="resume-card-right">
+            <span class="score-title">Resume Score</span>
+            <div class="score-circle-badge">
+              <span class="score-val">92</span>
+              <span class="score-denom">/100</span>
+            </div>
+            <span class="score-status-tag">ATS Friendly - Good Match</span>
+          </div>
+        </div>
+
+        <!-- Quick Actions 2x2 Grid (Matching Photo 1) -->
+        <div class="quick-actions-section">
+          <h3>Quick Actions</h3>
+          <div class="quick-actions-grid">
+            <div class="quick-action-card" onclick="openResumeBuilderModal()">
+              <div class="qa-icon-box blue">
+                <i data-lucide="file-text"></i>
+              </div>
+              <div class="qa-info">
+                <h4>Resume Builder</h4>
+                <p>Create a professional resume in minutes</p>
+              </div>
+            </div>
+
+            <div class="quick-action-card" onclick="triggerResumeUpload()">
+              <div class="qa-icon-box cyan">
+                <i data-lucide="file-search"></i>
+              </div>
+              <div class="qa-info">
+                <h4>Resume Analyzer</h4>
+                <p>Get AI feedback and improve your resume</p>
+              </div>
+            </div>
+
+            <div class="quick-action-card" onclick="switchTab('courses')">
+              <div class="qa-icon-box green">
+                <i data-lucide="lightbulb"></i>
+              </div>
+              <div class="qa-info">
+                <h4>Career Roadmap</h4>
+                <p>Personalized learning path for your dream career</p>
+              </div>
+            </div>
+
+            <div class="quick-action-card" onclick="switchTab('interviews')">
+              <div class="qa-icon-box orange">
+                <i data-lucide="mic"></i>
+              </div>
+              <div class="qa-info">
+                <h4>Mock Interview</h4>
+                <p>Practice interview and get AI-powered feedback</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recommended Career Paths (Matching Photo 1) -->
+        <div class="career-paths-section">
+          <div class="flex-between">
+            <h3>Recommended Career Paths</h3>
+            <a href="#" onclick="showToast('Loading additional career recommendations...', 'info'); return false;" class="text-link">View All</a>
+          </div>
+
+          <div class="career-paths-list">
+            <div class="career-path-item">
+              <div class="cp-left">
+                <div class="cp-icon-box"><i data-lucide="code"></i></div>
+                <div>
+                  <h4>Full-Stack AI Engineer</h4>
+                  <p>FastAPI, React, PyTorch & LLMs</p>
+                </div>
+              </div>
+              <div class="cp-right">
+                <span class="match-badge">95% Match</span>
+                <span class="demand-tag">High Demand</span>
+              </div>
+            </div>
+
+            <div class="career-path-item">
+              <div class="cp-left">
+                <div class="cp-icon-box"><i data-lucide="smartphone"></i></div>
+                <div>
+                  <h4>Flutter Mobile Specialist</h4>
+                  <p>Cross-Platform iOS & Android Apps</p>
+                </div>
+              </div>
+              <div class="cp-right">
+                <span class="match-badge">88% Match</span>
+                <span class="demand-tag">High Demand</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 3: QUIZ & AI MOCK INTERVIEWS (Matching Photo 4) -->
     <main id="view-interviews" class="tab-content">
-      <div class="interview-container">
-        <!-- Role Selector Sidebar -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title" style="font-size:1.1rem;"><i data-lucide="target" style="color:var(--accent-pink);"></i> Target Role</h3>
+      <div class="quiz-interview-container">
+        <h2 class="section-title-center">Quiz & AI Mock Interviews</h2>
+
+        <!-- Sub-Tabs Selector (Matching Photo 4) -->
+        <div class="sub-tabs-selector">
+          <button class="sub-tab-btn active" id="subtab-quizzes" onclick="switchQuizSubTab('quizzes')">
+            ⚡ Skill Quizzes
+          </button>
+          <button class="sub-tab-btn" id="subtab-mock" onclick="switchQuizSubTab('mock')">
+            ✨ AI Mock Interview
+          </button>
+        </div>
+
+        <!-- SUBVIEW A: SKILL QUIZZES -->
+        <div id="subview-quizzes" class="subview-content active">
+          <!-- Category Chips Horizontal Bar (Matching Photo 4) -->
+          <div class="category-chips-bar">
+            <button class="chip-btn active" onclick="selectQuizCategory('FastAPI', this)">✓ FastAPI</button>
+            <button class="chip-btn" onclick="selectQuizCategory('Flutter', this)">Flutter</button>
+            <button class="chip-btn" onclick="selectQuizCategory('UI/UX Design', this)">UI/UX Design</button>
+            <button class="chip-btn" onclick="selectQuizCategory('AI & ML', this)">AI & ML</button>
           </div>
-          <div class="role-selector">
-            <div class="role-btn active" onclick="selectInterviewRole('Full Stack Engineer', 'Technical')">
-              <span>Full Stack Engineer</span>
-              <i data-lucide="chevron-right"></i>
+
+          <!-- Question Card Container (Matching Photo 4) -->
+          <div class="card quiz-question-card">
+            <div class="quiz-meta-row">
+              <span class="question-counter" id="quiz-question-counter">Question 1 of 2</span>
+              <span class="quiz-score-badge" id="quiz-score-badge">Score: 0</span>
             </div>
-            <div class="role-btn" onclick="selectInterviewRole('UI/UX Designer', 'Design & Portfolio')">
-              <span>UI/UX Designer</span>
-              <i data-lucide="chevron-right"></i>
+
+            <h3 class="quiz-question-text" id="quiz-question-text">
+              What parameter is used in FastAPI decorators to set the HTTP response code?
+            </h3>
+
+            <!-- 4 Radio Option Choices (Matching Photo 4) -->
+            <div class="quiz-options-list" id="quiz-options-list">
+              <div class="quiz-option-item" onclick="selectQuizOption(0)">
+                <span class="option-code-text">status_code=</span>
+              </div>
+              <div class="quiz-option-item" onclick="selectQuizOption(1)">
+                <span class="option-code-text">response_code=</span>
+              </div>
+              <div class="quiz-option-item" onclick="selectQuizOption(2)">
+                <span class="option-code-text">http_status=</span>
+              </div>
+              <div class="quiz-option-item" onclick="selectQuizOption(3)">
+                <span class="option-code-text">code=</span>
+              </div>
             </div>
-            <div class="role-btn" onclick="selectInterviewRole('Product Manager', 'Behavioral & Strategy')">
-              <span>Product Manager</span>
-              <i data-lucide="chevron-right"></i>
+
+            <div id="quiz-explanation-box" class="quiz-explanation-box" style="display:none;"></div>
+
+            <div class="quiz-actions-row">
+              <button class="btn-primary-blue" id="quiz-next-btn" onclick="nextQuizQuestion()">Next Question →</button>
             </div>
           </div>
         </div>
 
-        <!-- Question & Practice Box -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title"><i data-lucide="mic" style="color:var(--accent-purple);"></i> Mock Practice Session</h3>
-            <span class="stat-badge green" id="interview-role-badge">Full Stack Engineer</span>
-          </div>
-
-          <div class="question-box">
-            <span style="font-size:0.78rem; font-weight:700; color:var(--accent-purple); text-transform:uppercase;">Question 1 of 5</span>
-            <h4 id="interview-question-text" style="font-size:1.1rem; margin-top:0.4rem;">
-              "How do you optimize database query performance for high-traffic API endpoints?"
-            </h4>
-          </div>
-
-          <label style="font-size:0.85rem; font-weight:600; color:var(--text-secondary);">Your Answer (Text or Audio Simulator):</label>
-          <textarea class="textarea-custom" id="interview-answer-input" placeholder="Type your answer here or click 'Record Speech' to speak..."></textarea>
-
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
-            <button class="btn-primary" style="background:var(--accent-purple);" onclick="simulateSpeechInput()">
-              <i data-lucide="mic"></i> Record Speech (Sim)
-            </button>
-            <button class="btn-primary" onclick="submitInterviewAnswer()">
-              Submit & Get AI Score <i data-lucide="arrow-right"></i>
-            </button>
-          </div>
-
-          <!-- Feedback Box -->
-          <div id="interview-feedback-box" style="display:none; margin-top:1.5rem; padding:1.25rem; background:var(--bg-input); border-radius:var(--radius-sm); border-left:4px solid var(--accent-green);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-              <h4 style="font-weight:700; color:var(--text-primary);">AI Evaluation Report</h4>
-              <span class="stat-badge green" id="ai-interview-score">Score: 92/100</span>
+        <!-- SUBVIEW B: AI MOCK INTERVIEW -->
+        <div id="subview-mock" class="subview-content" style="display:none;">
+          <div class="card interview-card">
+            <div class="card-header">
+              <h3>AI Technical Interview Practice</h3>
+              <span class="badge-role">Role: Full-Stack AI Engineer</span>
             </div>
-            <p id="ai-interview-feedback-text" style="font-size:0.9rem; color:var(--text-secondary); line-height:1.5;">
-              Excellent technical depth! You correctly emphasized indexing strategies, caching layers (Redis), and connection pooling. To reach 100%, mention read-replica scaling.
-            </p>
+
+            <div class="interview-prompt-box">
+              <i data-lucide="mic" style="color:var(--accent-primary);"></i>
+              <p id="interview-prompt-text">
+                "How do you design a real-time sync architecture between a Flutter mobile app and FastAPI backend using WebSockets?"
+              </p>
+            </div>
+
+            <div class="form-group" style="margin-top:1rem;">
+              <label>Your Response (Text or Voice Input):</label>
+              <textarea id="interview-answer-input" rows="4" placeholder="Explain your answer using the STAR methodology (Situation, Task, Action, Result)..."></textarea>
+            </div>
+
+            <div class="interview-btn-group">
+              <button class="btn-outline-blue" onclick="simulateSpeechToText()"><i data-lucide="mic"></i> Record Speech</button>
+              <button class="btn-primary-blue" onclick="submitInterviewAnswer()"><i data-lucide="send"></i> Submit Answer</button>
+            </div>
+
+            <div id="interview-feedback-box" class="feedback-result-card" style="display:none;">
+              <div class="flex-between">
+                <h4>AI Evaluation Feedback</h4>
+                <span class="score-tag-green" id="ai-interview-score">Score: 92/100</span>
+              </div>
+              <p id="ai-interview-feedback-text" style="margin-top:0.5rem; font-size:0.9rem; line-height:1.5;">
+                Great structured response! You clearly articulated your technical reasoning. Key strength: Excellent terminology usage.
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- TAB 5: SETTINGS & API CONNECTION -->
+    <!-- TAB 4: MY COURSES & PLAYER -->
+    <main id="view-courses" class="tab-content">
+      <div class="courses-container">
+        <h2 class="section-title">My Courses & Learning Player</h2>
+
+        <!-- Enrolled Course Cards Bar (Matching Mobile App Cards) -->
+        <h3 style="margin-bottom: 0.75rem; font-size: 1.1rem; color: var(--text-primary);">Enrolled Courses & Modules</h3>
+        <div class="enrolled-courses-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="course-card card active-course" id="web-course-card-1" onclick="switchCourseTrack(1, this)" style="border: 2px solid var(--accent-primary); cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+            <div style="height: 100px; border-radius: 12px; background: linear-gradient(135deg, #3B82F6, #1D4ED8); display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+              <i data-lucide="code" style="width: 36px; height: 36px; color: #fff;"></i>
+            </div>
+            <h4 style="margin: 0; font-size: 1rem; color: var(--text-primary);">FastAPI Backend Architecture</h4>
+            <p style="margin: 4px 0 10px; font-size: 0.8rem; color: var(--text-secondary);">Python, Pydantic & WebSockets</p>
+            <div style="background: rgba(255,255,255,0.1); border-radius: 6px; height: 6px; overflow: hidden;">
+              <div style="width: 75%; height: 100%; background: #3B82F6;"></div>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; display: block;">75% completed • 5 Videos</span>
+          </div>
+
+          <div class="course-card card" id="web-course-card-2" onclick="switchCourseTrack(2, this)" style="border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+            <div style="height: 100px; border-radius: 12px; background: linear-gradient(135deg, #10B981, #047857); display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+              <i data-lucide="smartphone" style="width: 36px; height: 36px; color: #fff;"></i>
+            </div>
+            <h4 style="margin: 0; font-size: 1rem; color: var(--text-primary);">Flutter Mobile Cross-Platform</h4>
+            <p style="margin: 4px 0 10px; font-size: 0.8rem; color: var(--text-secondary);">Dart, Reactive Layouts & State</p>
+            <div style="background: rgba(255,255,255,0.1); border-radius: 6px; height: 6px; overflow: hidden;">
+              <div style="width: 40%; height: 100%; background: #10B981;"></div>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; display: block;">40% completed • 5 Videos</span>
+          </div>
+
+          <div class="course-card card" id="web-course-card-3" onclick="switchCourseTrack(3, this)" style="border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+            <div style="height: 100px; border-radius: 12px; background: linear-gradient(135deg, #8B5CF6, #6D28D9); display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+              <i data-lucide="palette" style="width: 36px; height: 36px; color: #fff;"></i>
+            </div>
+            <h4 style="margin: 0; font-size: 1rem; color: var(--text-primary);">UI/UX Figma Product Design</h4>
+            <p style="margin: 4px 0 10px; font-size: 0.8rem; color: var(--text-secondary);">Auto-Layout, Tokens & WCAG</p>
+            <div style="background: rgba(255,255,255,0.1); border-radius: 6px; height: 6px; overflow: hidden;">
+              <div style="width: 90%; height: 100%; background: #8B5CF6;"></div>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; display: block;">90% completed • 5 Videos</span>
+          </div>
+        </div>
+
+        <div class="course-player-card card">
+          <div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000;">
+            <iframe id="course-video-iframe" src="https://www.youtube-nocookie.com/embed/tLKKmouUams?rel=0" title="FastAPI Architecture Course" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; border-radius: 12px;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          </div>
+          <div class="video-info" style="margin-top: 1rem;">
+            <h3 id="current-lesson-title">1. Introduction to FastAPI Backend Architecture</h3>
+            <p id="current-lesson-desc">Learn how to build high-performance APIs with Python, Pydantic, and Uvicorn.</p>
+          </div>
+        </div>
+
+        <!-- Course Track Chips Selector -->
+        <div class="category-chips-bar" style="margin-bottom: 1rem; margin-top: 1.5rem;">
+          <button class="chip-btn active" onclick="switchCourseTrack(1, this)">✓ FastAPI Backend (5 Videos)</button>
+          <button class="chip-btn" onclick="switchCourseTrack(2, this)">Flutter Mobile (5 Videos)</button>
+          <button class="chip-btn" onclick="switchCourseTrack(3, this)">UI/UX Figma Design (5 Videos)</button>
+        </div>
+
+        <div class="lessons-list-card card">
+          <h3 id="track-title-header">FastAPI Backend Architecture - 5 Video Lessons</h3>
+          <div class="lessons-list" id="lessons-list-container">
+            <!-- Rendered by app.js -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 5: SETTINGS & API (Matching Photo 3 & 5) -->
     <main id="view-settings" class="tab-content">
-      <div class="card" style="max-width:800px; margin:0 auto;">
-        <div class="card-header">
-          <h3 class="card-title"><i data-lucide="sliders" style="color:var(--accent-primary);"></i> System Settings & FastAPI Config</h3>
+      <div class="settings-container">
+        <!-- Settings Top Header Card (Matching Photo 3) -->
+        <div class="settings-user-card">
+          <div class="settings-user-left">
+            <div class="settings-avatar-circle">
+              <i data-lucide="user"></i>
+            </div>
+            <div>
+              <h2 class="settings-user-name">John Jonson</h2>
+              <p class="settings-user-email">johnjonson@email.com</p>
+            </div>
+          </div>
+          <button class="icon-btn-circle-white" onclick="openEditProfileModal()">
+            <i data-lucide="edit-3"></i>
+          </button>
         </div>
 
-        <div style="display:flex; flex-direction:column; gap:1.25rem;">
-          <div>
-            <label style="font-weight:600; font-size:0.9rem; margin-bottom:0.4rem; display:block;">User Profile Name</label>
-            <input type="text" value="John Jonson" class="search-box" style="padding-left:1rem;" id="setting-username">
-          </div>
-
-          <div>
-            <label style="font-weight:600; font-size:0.9rem; margin-bottom:0.4rem; display:block;">FastAPI Backend URL</label>
-            <input type="text" value="http://localhost:8000" class="search-box" style="padding-left:1rem;" id="setting-backend-url">
-            <span style="font-size:0.78rem; color:var(--text-muted); margin-top:0.25rem; display:block;">Connects to python main.py backend service.</span>
-          </div>
-
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:0.85rem; background:var(--bg-input); border-radius:var(--radius-sm);">
-            <div>
-              <h5 style="font-size:0.9rem; font-weight:700;">Backend Connection Status</h5>
-              <span id="backend-status-text" style="font-size:0.8rem; color:var(--accent-green);">● Offline (Using Client-Side Data Engine)</span>
+        <!-- Account Section (Matching Photo 3) -->
+        <div class="settings-section">
+          <h3>Account</h3>
+          <div class="settings-tile-list">
+            <div class="settings-tile" onclick="openEditProfileModal()">
+              <div class="tile-icon-box blue"><i data-lucide="user"></i></div>
+              <div class="tile-info">
+                <h4>Profile Details</h4>
+                <p>Edit name, email and phone (Syncs Live)</p>
+              </div>
+              <i data-lucide="chevron-right" class="chevron-icon"></i>
             </div>
-            <button class="btn-primary" style="padding:0.4rem 0.85rem; font-size:0.8rem;" onclick="testBackendConnection()">Test Connection</button>
-          </div>
 
-          <button class="btn-primary" style="margin-top:1rem;" onclick="showToast('Settings saved successfully!', 'success')">Save Preferences</button>
+            <div class="settings-tile" onclick="openChangePasswordModal()">
+              <div class="tile-icon-box blue"><i data-lucide="lock"></i></div>
+              <div class="tile-info">
+                <h4>Change Password</h4>
+                <p>Update your login password</p>
+              </div>
+              <i data-lucide="chevron-right" class="chevron-icon"></i>
+            </div>
+
+            <div class="settings-tile" onclick="triggerResumeUpload()">
+              <div class="tile-icon-box blue"><i data-lucide="file-text"></i></div>
+              <div class="tile-info">
+                <h4>Resume & Career Data</h4>
+                <p>Manage uploaded resumes and analysis</p>
+              </div>
+              <i data-lucide="chevron-right" class="chevron-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preferences Section (Matching Photo 3 & 5) -->
+        <div class="settings-section">
+          <h3>Preferences</h3>
+          <div class="settings-tile-list">
+            <div class="settings-tile flex-between">
+              <div class="flex-left">
+                <div class="tile-icon-box blue"><i data-lucide="moon"></i></div>
+                <div class="tile-info">
+                  <h4>Dark Mode</h4>
+                  <p>Switch between light and dark theme</p>
+                </div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="dark-mode-toggle" checked onchange="toggleTheme()">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-tile flex-between">
+              <div class="flex-left">
+                <div class="tile-icon-box blue"><i data-lucide="bell"></i></div>
+                <div class="tile-info">
+                  <h4>Notifications</h4>
+                  <p>Receive app alerts and reminders</p>
+                </div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked onchange="showToast('Notification preference saved', 'info')">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-tile flex-between">
+              <div class="flex-left">
+                <div class="tile-icon-box blue"><i data-lucide="mail"></i></div>
+                <div class="tile-info">
+                  <h4>Email Updates</h4>
+                  <p>Receive course and career updates</p>
+                </div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked onchange="showToast('Email updates preference saved', 'info')">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-tile" onclick="resetUserProgressWeb()">
+              <div class="tile-icon-box blue"><i data-lucide="rotate-ccw"></i></div>
+              <div class="tile-info">
+                <h4>Reset All Progress to 0</h4>
+                <p>Clear completed lessons, hours & skill metrics</p>
+              </div>
+              <i data-lucide="chevron-right" class="chevron-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Support Section (Matching Photo 5) -->
+        <div class="settings-section">
+          <h3>Support</h3>
+          <div class="settings-tile-list">
+            <div class="settings-tile" onclick="showToast('Privacy Policy: All data secured.', 'info')">
+              <div class="tile-icon-box blue"><i data-lucide="shield"></i></div>
+              <div class="tile-info">
+                <h4>Privacy & Security</h4>
+                <p>Permissions, data and account safety</p>
+              </div>
+              <i data-lucide="chevron-right" class="chevron-icon"></i>
+            </div>
+
+            <div class="settings-tile" onclick="showToast('Support Team: support@skillsnap.ai', 'info')">
+              <div class="tile-icon-box blue"><i data-lucide="help-circle"></i></div>
+              <div class="tile-info">
+                <h4>Help & Support</h4>
+                <p>FAQs, contact support and feedback</p>
+              </div>
+              <i data-lucide="chevron-right" class="chevron-icon"></i>
+            </div>
+
+            <div class="settings-tile" onclick="showToast('SkillSnap AI v2.4.0 (Build 2026)', 'info')">
+              <div class="tile-icon-box blue"><i data-lucide="info"></i></div>
+              <div class="tile-info">
+                <h4>About SkillSnap</h4>
+                <p>App version, terms and policies</p>
+              </div>
+              <i data-lucide="chevron-right" class="chevron-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Red Logout Button (Matching Photo 5) -->
+        <div class="logout-container">
+          <button class="btn-logout-red" onclick="handleLogout()">
+            <i data-lucide="log-out"></i> Logout
+          </button>
         </div>
       </div>
     </main>
-
-    <!-- INTERACTIVE SKILL ASSESSMENT QUIZ MODAL -->
-    <div class="modal-overlay" id="quiz-modal" style="display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); align-items:center; justify-content:center;">
-      <div class="card" style="width:100%; max-width:540px; margin:1rem; border:1px solid var(--border-color); box-shadow:var(--shadow-lg);">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-          <h3 class="card-title" style="font-size:1.1rem;"><i data-lucide="zap" style="color:var(--accent-orange);"></i> Skill Assessment Quiz</h3>
-          <button class="icon-btn" onclick="closeSkillQuizModal()"><i data-lucide="x"></i></button>
-        </div>
-        
-        <div id="quiz-body" style="padding-top:0.5rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-            <span style="font-size:0.8rem; font-weight:700; color:var(--accent-primary); text-transform:uppercase;" id="quiz-step-indicator">Question 1 of 3</span>
-            <span class="stat-badge purple" id="quiz-category-badge">Management & Strategy</span>
-          </div>
-
-          <h4 id="quiz-question-title" style="font-size:1.05rem; font-weight:600; line-height:1.5; margin-bottom:1.2rem;">
-            How do you prioritize project deliverables when technical debt competes with tight feature deadlines?
-          </h4>
-
-          <div id="quiz-options-container" style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.5rem;">
-            <!-- Options dynamically rendered by app.js -->
-          </div>
-
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <button class="btn-primary" style="background:var(--bg-input); color:var(--text-primary);" onclick="closeSkillQuizModal()">Cancel</button>
-            <button class="btn-primary" id="quiz-next-btn" onclick="submitQuizAnswer()">Next Question <i data-lucide="arrow-right"></i></button>
-          </div>
-        </div>
-
-        <div id="quiz-results" style="display:none; text-align:center; padding:1.2rem 0.5rem 0.5rem;">
-          <div style="width:64px; height:64px; border-radius:50%; background:rgba(16,185,129,0.15); color:var(--accent-green); display:flex; align-items:center; justify-content:center; margin:0 auto 1rem; font-size:1.8rem; font-weight:bold;">
-            ✓
-          </div>
-          <h3 style="font-size:1.3rem; font-weight:700;">Quiz Completed Successfully!</h3>
-          <p style="color:var(--text-secondary); font-size:0.9rem; margin-top:0.4rem;" id="quiz-result-score-text">You scored 3/3 (100%)!</p>
-          <div style="margin:1.2rem 0; padding:1rem; background:var(--bg-input); border-radius:var(--radius-md); border:1px solid var(--border-color);">
-            <span style="font-size:0.85rem; color:var(--text-secondary);">Skill Growth Bonus Gained:</span>
-            <div style="font-size:1.4rem; font-weight:800; color:var(--accent-green); margin-top:0.2rem;" id="quiz-bonus-text">+8% Management & Strategy</div>
-          </div>
-          <button class="btn-primary" style="width:100%; justify-content:center;" onclick="closeSkillQuizModal()">Apply Progress to Profile</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- FLOATING AI ASSISTANT CHAT MODAL -->
-    <div class="chat-modal" id="chat-modal">
-      <div class="chat-header">
-        <div class="chat-title">
-          <i data-lucide="bot" style="color:var(--accent-pink);"></i>
-          <span>SkillSnap AI Assistant</span>
-        </div>
-        <button class="icon-btn" style="width:30px; height:30px;" onclick="toggleChatModal()">
-          <i data-lucide="x" style="width:16px; height:16px;"></i>
-        </button>
-      </div>
-
-      <div class="chat-messages" id="chat-messages-container">
-        <div class="msg ai">
-          Hello John! 👋 I'm your SkillSnap AI mentor. How can I assist you with your courses, ATS resume, or career path today?
-        </div>
-      </div>
-
-      <div class="chat-input-area">
-        <input type="text" id="chat-input" placeholder="Type your message..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
-        <button class="btn-primary" style="padding:0.4rem 0.8rem; border-radius:var(--radius-full);" onclick="sendChatMessage()">
-          <i data-lucide="send" style="width:16px; height:16px;"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <footer>
-      <p>© 2026 SkillSnap AI. Powered by Advanced AI Learning & Career Intelligence.</p>
-    </footer>
-
   </div>
 
-  <!-- Main JavaScript App Controller -->
+  <!-- FLOATING AI ASSISTANT CHATBOT MODAL -->
+  <div id="chat-modal" class="modal-overlay" style="display:none;">
+    <div class="chat-modal-content">
+      <div class="chat-header">
+        <div class="chat-title">
+          <i data-lucide="bot"></i>
+          <span>SkillSnap AI Career Mentor</span>
+        </div>
+        <button class="close-btn" onclick="toggleChatModal()">✕</button>
+      </div>
+      <div class="chat-body" id="chat-messages-container">
+        <div class="chat-message assistant">
+          <p>Hello John! I'm your AI Career Mentor. Ask me about FastAPI, Flutter, ATS resume tips, or mock interviews!</p>
+        </div>
+      </div>
+      <div class="chat-footer">
+        <input type="text" id="chat-input" placeholder="Type your message..." onkeypress="handleChatKeyPress(event)">
+        <button class="send-btn" onclick="sendChatMessage()"><i data-lucide="send"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT PROFILE MODAL -->
+  <div id="edit-profile-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content-card">
+      <div class="modal-header">
+        <h3>Edit Profile Details</h3>
+        <button class="close-btn" onclick="closeEditProfileModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="edit-full-name" value="John Jonson">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="edit-email" value="johnjonson@email.com">
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="text" id="edit-phone" value="+1 555-0199">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline-blue" onclick="closeEditProfileModal()">Cancel</button>
+        <button class="btn-primary-blue" onclick="saveProfileDetails()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL PERFORMANCE REPORT MODAL -->
+  <div id="full-report-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3>📊 Skill Performance & Analytics Report</h3>
+        <button class="close-btn" onclick="closeFullReportModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: rgba(59, 130, 246, 0.1); border-radius: 12px; padding: 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <i data-lucide="award" style="width: 32px; height: 32px; color: #3B82F6;"></i>
+          <div>
+            <div style="font-weight: bold; font-size: 16px; color: var(--text-primary);">Overall Skill Mastery: 85%</div>
+            <div style="font-size: 13px; color: var(--text-secondary);">Rank: Full-Stack Architecture Specialist</div>
+          </div>
+        </div>
+
+        <h4 style="margin-bottom: 10px; font-size: 15px; color: var(--text-primary);">Skill Progress Breakdown</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span>FastAPI Backend Architecture</span>
+            <strong style="color: #10B981;">100% (5/5 Lessons)</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span>Flutter Mobile Cross-Platform</span>
+            <strong style="color: #3B82F6;">40% (2/5 Lessons)</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span>UI/UX Figma Product Design</span>
+            <strong style="color: #8B5CF6;">20% (1/5 Lessons)</strong>
+          </div>
+        </div>
+
+        <h4 style="margin-bottom: 10px; font-size: 15px; color: var(--text-primary);">Readiness Metrics</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span>📄 ATS Resume Score</span>
+            <strong style="color: #10B981;">92 / 100</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span>🎙️ Mock Technical Interview Readiness</span>
+            <strong style="color: #3B82F6;">90 / 100</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span>⏱️ Total Class Study Time</span>
+            <strong style="color: #F59E0B;">7.0 Hours Spent</strong>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary-blue" onclick="closeFullReportModal()">Close Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS App Script -->
   <script src="app.js"></script>
 </body>
 </html>

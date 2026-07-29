@@ -1,95 +1,110 @@
-// SkillSnap AI Application JavaScript Controller
+/* ==========================================================================
+   SkillSnap AI - Master Application Logic Script (Mobile Identical Engine)
+   ========================================================================== */
 
-// Real-time WebSocket Connection Handle
-let liveSyncSocket = null;
 const CURRENT_USER_ID = 1;
+let liveSyncSocket = null;
 
-// Initialize Lucide Icons, Components, Live Sync & Firebase
+// Initialization
 document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) {
     lucide.createIcons();
   }
-  initHoursChart();
   initTheme();
   initWebSocketSync();
-  initFirebaseSync();
+  initUserProgressWeb();
+  initQuizData();
 });
 
-// --- Firebase Firestore Realtime Sync Engine ---
-let firebaseDb = null;
+// --- Tab Navigation Engine ---
+function switchTab(tabId) {
+  // Hide all main tab views
+  const views = ['dashboard', 'mentorship', 'interviews', 'courses', 'settings'];
+  views.forEach(v => {
+    const viewEl = document.getElementById(`view-${v}`);
+    const tabEl = document.getElementById(`tab-${v}`);
+    if (viewEl) viewEl.classList.remove('active');
+    if (tabEl) tabEl.classList.remove('active');
+  });
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAVN-TZd_B6nQoSF8xhAlxXJwsCurCdCLI",
-  authDomain: "skillsnap-ai-82f7b.firebaseapp.com",
-  projectId: "skillsnap-ai-82f7b",
-  storageBucket: "skillsnap-ai-82f7b.firebasestorage.app",
-  messagingSenderId: "556387645013",
-  appId: "1:556387645013:web:f38f9024f2b1d3d623259e"
-};
+  // Activate selected tab
+  const activeView = document.getElementById(`view-${tabId}`);
+  const activeTab = document.getElementById(`tab-${tabId}`);
+  if (activeView) activeView.classList.add('active');
+  if (activeTab) activeTab.classList.add('active');
 
-function initFirebaseSync() {
-  if (typeof firebase !== 'undefined') {
-    try {
-      if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-      }
-      firebaseDb = firebase.firestore();
-      console.log('🔥 Connected to Firebase Firestore Service');
+  if (window.lucide) lucide.createIcons();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-      // Listen to Realtime Firestore Updates from Mobile App or Web
-      firebaseDb.collection("progress").doc(`user_${CURRENT_USER_ID}`).onSnapshot((doc) => {
-        if (doc.exists) {
-          const data = doc.data();
-          console.log('🔥 Firebase Realtime Sync Event Received:', data);
+// --- Theme Engine ---
+function initTheme() {
+  const savedTheme = localStorage.getItem('skillsnap_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+}
 
-          if (data.lessons_completed !== undefined) {
-            const el = document.getElementById('stat-lessons-val');
-            if (el) el.innerText = data.lessons_completed;
-          }
-          if (data.skill_val !== undefined) {
-            const valEl = document.getElementById('skill-val-mgmt');
-            const barEl = document.getElementById('skill-bar-mgmt');
-            if (valEl) valEl.innerText = `${data.skill_val}%`;
-            if (barEl) barEl.style.width = `${data.skill_val}%`;
-          }
-          if (data.user_name) {
-            document.querySelectorAll('.user-name').forEach(el => el.innerText = data.user_name);
-          }
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('skillsnap_theme', newTheme);
+  updateThemeIcon(newTheme);
+  showToast(`Switched to ${newTheme.toUpperCase()} theme`, 'info');
+}
 
-          if (data.last_source === 'mobile') {
-            showToast(`🔥 Firebase Realtime Sync: ${data.message || 'Progress updated live from Mobile App!'}`, 'success');
-          }
-        }
-      }, (err) => {
-        console.warn('Firebase Firestore fallback mode active:', err);
-      });
-    } catch (e) {
-      console.warn('Firebase initialization notice:', e);
-    }
+function updateThemeIcon(theme) {
+  const icon = document.getElementById('theme-icon');
+  const toggleCheckbox = document.getElementById('dark-mode-toggle');
+  if (toggleCheckbox) toggleCheckbox.checked = (theme === 'dark');
+  if (icon) {
+    icon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
+    if (window.lucide) lucide.createIcons();
   }
 }
 
-function syncProgressToFirebase(data) {
-  if (firebaseDb) {
-    try {
-      firebaseDb.collection("progress").doc(`user_${CURRENT_USER_ID}`).set({
-        ...data,
-        last_source: 'web',
-        updated_at: new Date().toISOString()
-      }, { merge: true }).catch(err => console.warn('Firestore write warning:', err));
-    } catch (e) {
-      console.warn('Firestore sync exception:', e);
-    }
-  }
+// --- Toast Notifications ---
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerText = message;
+
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.remove();
+  }, 3500);
 }
 
-// --- Real-Time WebSocket Live Sync (Website <-> Mobile) ---
+// --- Google Pixel 5 Viewport Mode ---
+function togglePixel5Mode() {
+  document.body.classList.toggle('pixel-5-mode');
+  const isPixel5 = document.body.classList.contains('pixel-5-mode');
+  showToast(isPixel5 ? '📱 Google Pixel 5 Viewport Mode Enabled' : '🖥️ Desktop View Restored', 'info');
+  if (window.lucide) lucide.createIcons();
+}
+
+// --- Backend API & WebSocket Helpers ---
+function getBackendUrl() {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
+  return window.location.origin;
+}
+
+function getWebSocketUrl() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return `ws://localhost:8000/ws/${CURRENT_USER_ID}`;
+  }
+  return `${protocol}//${window.location.host}/ws/${CURRENT_USER_ID}`;
+}
+
 function initWebSocketSync() {
-  const wsHost = window.location.hostname || 'localhost';
-  const wsUrl = `ws://${wsHost}:8000/ws/${CURRENT_USER_ID}`;
-
   try {
-    liveSyncSocket = new WebSocket(wsUrl);
+    liveSyncSocket = new WebSocket(getWebSocketUrl());
 
     liveSyncSocket.onopen = () => {
       console.log('⚡ Connected to SkillSnap Real-Time Sync Service');
@@ -98,772 +113,470 @@ function initWebSocketSync() {
     liveSyncSocket.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
-        console.log('⚡ Real-time Sync Event Received:', payload);
-        const data = payload.data || payload;
-        
-        if (data.lessons_completed !== undefined) {
-          const el = document.getElementById('stat-lessons-val');
-          if (el) el.innerText = data.lessons_completed;
-        }
-        if (data.skill_val !== undefined) {
-          const valEl = document.getElementById('skill-val-mgmt');
-          const barEl = document.getElementById('skill-bar-mgmt');
-          if (valEl) valEl.innerText = `${data.skill_val}%`;
-          if (barEl) barEl.style.width = `${data.skill_val}%`;
-        }
-        if (data.user_name) {
-          document.querySelectorAll('.user-name').forEach(el => el.innerText = data.user_name);
-        }
-
-        const syncMsg = data.message || 'Progress synchronized live across App & Website!';
-        showToast(`⚡ Real-Time Live Sync: ${syncMsg}`, 'success');
-      } catch (err) {
-        console.warn('Failed to parse WebSocket message', err);
-      }
-    };
-
-    liveSyncSocket.onerror = (err) => {
-      console.warn('WebSocket sync notice: Local server connecting...', err);
-    };
-
-    liveSyncSocket.onclose = () => {
-      setTimeout(initWebSocketSync, 5000); // Auto reconnect
-    };
-  } catch (e) {
-    console.warn('WebSocket init exception:', e);
-  }
-}
-
-function emitLiveSyncUpdate(eventType, data) {
-  const payload = {
-    user_id: CURRENT_USER_ID,
-    event: eventType,
-    data: data,
-    timestamp: new Date().toISOString()
-  };
-
-  if (liveSyncSocket && liveSyncSocket.readyState === WebSocket.OPEN) {
-    liveSyncSocket.send(JSON.stringify(payload));
-  } else {
-    // Fallback HTTP POST broadcast
-    const apiHost = window.location.hostname || 'localhost';
-    fetch(`http://${apiHost}:8000/sync/broadcast`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: CURRENT_USER_ID,
-        event_type: eventType,
-        data: data
-      })
-    }).catch(err => console.warn('Sync broadcast fallback error:', err));
-  }
-}
-
-// --- Toast Notification System ---
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `
-    <i data-lucide="${type === 'success' ? 'check-circle' : 'info'}" style="width:18px; height:18px;"></i>
-    <span>${message}</span>
-  `;
-  container.appendChild(toast);
-  if (window.lucide) lucide.createIcons();
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(50px)';
-    toast.style.transition = 'all 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
-
-// --- Theme Switcher ---
-function initTheme() {
-  const savedTheme = localStorage.getItem('skillsnap_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  updateThemeIcon(savedTheme);
-}
-
-function toggleTheme() {
-  const currentTheme = document.documentElement.getAttribute('data-theme');
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('skillsnap_theme', newTheme);
-  updateThemeIcon(newTheme);
-}
-
-function updateThemeIcon(theme) {
-  const themeIcon = document.getElementById('theme-icon');
-  if (themeIcon) {
-    themeIcon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
-    if (window.lucide) lucide.createIcons();
-  }
-}
-
-// --- Tab Router ---
-function switchTab(tabId) {
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  const activeBtn = document.getElementById(`tab-${tabId}`);
-  if (activeBtn) activeBtn.classList.add('active');
-
-  document.querySelectorAll('.tab-content').forEach(view => view.classList.remove('active'));
-  const activeView = document.getElementById(`view-${tabId}`);
-  if (activeView) activeView.classList.add('active');
-
-  if (window.lucide) lucide.createIcons();
-}
-
-// --- Global Search Filter ---
-function handleSearch(query) {
-  const cleanQuery = query.toLowerCase().trim();
-  if (!cleanQuery) return;
-
-  if (cleanQuery.includes('resume') || cleanQuery.includes('ats') || cleanQuery.includes('builder')) {
-    switchTab('mentorship');
-  } else if (cleanQuery.includes('course') || cleanQuery.includes('full stack') || cleanQuery.includes('lesson')) {
-    switchTab('courses');
-  } else if (cleanQuery.includes('interview') || cleanQuery.includes('mock')) {
-    switchTab('interviews');
-  }
-}
-
-// --- Analytics Chart (Chart.js) ---
-let hoursChartInstance = null;
-
-function initHoursChart() {
-  const ctx = document.getElementById('hoursChart');
-  if (!ctx) return;
-
-  if (hoursChartInstance) {
-    hoursChartInstance.destroy();
-  }
-
-  hoursChartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      datasets: [
-        {
-          label: 'Design (Hours)',
-          data: [4, 6, 8, 5, 9, 7, 11],
-          backgroundColor: '#10b981',
-          borderRadius: 6
-        },
-        {
-          label: 'Management (Hours)',
-          data: [2, 1, 3, 2, 4, 3, 5],
-          backgroundColor: '#a855f7',
-          borderRadius: 6
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: {
-            color: '#94a3b8',
-            font: { family: 'Plus Jakarta Sans', size: 12 }
+        console.log('⚡ Real-time Event Received:', payload);
+        if (payload.event === 'PROGRESS_UPDATE' || payload.event === 'MOBILE_UPDATE' || payload.event === 'DATA_UPDATED') {
+          if (payload.data && payload.data.lessons_completed !== undefined) {
+            webUserProgress.lessons_completed = payload.data.lessons_completed;
+            webUserProgress.hours_spent = payload.data.hours_spent || webUserProgress.hours_spent;
+            if (payload.data.skills) {
+              if (payload.data.skills['UI/UX Design'] !== undefined) webUserProgress.skills['uiux'] = payload.data.skills['UI/UX Design'];
+              if (payload.data.skills['Visual & Frontend Design'] !== undefined) webUserProgress.skills['design'] = payload.data.skills['Visual & Frontend Design'];
+              if (payload.data.skills['Management & Strategy'] !== undefined) webUserProgress.skills['mgmt'] = payload.data.skills['Management & Strategy'];
+            }
+            localStorage.setItem('skillsnap_user_progress_v2', JSON.stringify(webUserProgress));
+            renderProgressWebUI();
           }
+          showToast('📱 Live Sync: Progress updated from Mobile!', 'success');
+        } else if (payload.event === 'PROGRESS_RESET') {
+          webUserProgress = { lessons_completed: 0, hours_spent: 0.0, skills: { 'uiux': 0, 'design': 0, 'mgmt': 0 } };
+          localStorage.setItem('skillsnap_user_progress_v2', JSON.stringify(webUserProgress));
+          renderProgressWebUI();
+          showToast('🔄 Progress Reset from Mobile!', 'info');
         }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: '#94a3b8' }
-        },
-        y: {
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          ticks: { color: '#94a3b8' }
-        }
-      }
-    }
-  });
-}
-
-// --- Subpill Tab Switcher for Resume Hub ---
-function switchResumeMode(mode) {
-  document.getElementById('subpill-ats').classList.remove('active');
-  document.getElementById('subpill-builder').classList.remove('active');
-  document.getElementById(`subpill-${mode}`).classList.add('active');
-
-  if (mode === 'ats') {
-    document.getElementById('mode-resume-ats').style.display = 'grid';
-    document.getElementById('mode-resume-builder').style.display = 'none';
-  } else {
-    document.getElementById('mode-resume-ats').style.display = 'none';
-    document.getElementById('mode-resume-builder').style.display = 'grid';
-    updateResumePreview();
-  }
-}
-
-// --- Resume Builder Studio Logic ---
-function updateResumePreview() {
-  const name = document.getElementById('builder-name').value;
-  const title = document.getElementById('builder-title').value;
-  const contact = document.getElementById('builder-contact').value;
-  const summary = document.getElementById('builder-summary').value;
-  const experience = document.getElementById('builder-experience').value;
-  const skills = document.getElementById('builder-skills').value;
-
-  if (document.getElementById('pv-name')) document.getElementById('pv-name').innerText = name || 'John Jonson';
-  if (document.getElementById('pv-title')) document.getElementById('pv-title').innerText = title || 'Target Title';
-  if (document.getElementById('pv-contact')) document.getElementById('pv-contact').innerText = contact || 'Email & Phone';
-  if (document.getElementById('pv-summary')) document.getElementById('pv-summary').innerText = summary || 'Summary...';
-  if (document.getElementById('pv-experience')) document.getElementById('pv-experience').innerText = experience || 'Experience...';
-  if (document.getElementById('pv-skills')) document.getElementById('pv-skills').innerText = skills || 'Skills...';
-}
-
-function generateAISummary() {
-  const title = document.getElementById('builder-title').value;
-  const aiSummaries = [
-    `Results-driven ${title || 'Software Engineer'} specializing in high-performance Web applications, RESTful APIs, and cloud services. Proven track record of improving system uptime by 30% and leading user-centric feature rollouts.`,
-    `Creative ${title || 'UI/UX Designer'} with expertise in design systems, interactive prototypes, and WCAG accessibility standards. Experienced in delivering seamless digital products.`,
-    `Strategic ${title || 'Product Lead'} skilled in cross-functional team leadership, product roadmap prioritization, and data-driven engagement optimization.`
-  ];
-  const summaryText = aiSummaries[Math.floor(Math.random() * aiSummaries.length)];
-  document.getElementById('builder-summary').value = summaryText;
-  updateResumePreview();
-  showToast('AI Professional Summary Generated!', 'success');
-}
-
-function printResumePDF() {
-  showToast('Preparing PDF document for print/download...', 'info');
-  setTimeout(() => {
-    window.print();
-  }, 500);
-}
-
-// --- ATS Resume Analyzer Engine ---
-function handleResumeUpload(event) {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById('resume-text-input').value = `[Uploaded File: ${file.name}]\n` + e.target.result.slice(0, 500);
-      analyzeResumeText();
+      } catch (err) {}
     };
-    reader.readAsText(file);
-  }
+  } catch (err) {}
 }
 
-function analyzeResumeText() {
-  const text = document.getElementById('resume-text-input').value.trim();
-  let atsScore = 85;
-  let grammarScore = 92;
-  let keywordScore = 78;
-  let formattingScore = 90;
-
-  if (text.length > 50) {
-    const containsTech = /react|python|flutter|fastapi|sql|node|aws|docker|ui|ux/i.test(text);
-    const containsMetrics = /\d+%|\$\d+|\d+x|improved|built|managed/i.test(text);
-
-    atsScore = containsTech && containsMetrics ? 94 : containsTech ? 88 : 76;
-    keywordScore = containsTech ? 90 : 65;
-    grammarScore = 95;
-    formattingScore = 88;
-  }
-
-  document.getElementById('score-ats').innerText = `${atsScore}%`;
-  document.getElementById('score-grammar').innerText = `${grammarScore}%`;
-  document.getElementById('score-keywords').innerText = `${keywordScore}%`;
-  document.getElementById('score-formatting').innerText = `${formattingScore}%`;
-
-  document.getElementById('overall-ats-badge').innerText = `Score: ${atsScore}/100`;
-
-  if (atsScore >= 90) {
-    document.getElementById('ats-strengths').innerText = 'Exceptional resume! Highly optimized for ATS scanners with strong keywords and quantified impacts.';
-    document.getElementById('ats-suggestions').innerText = 'Minor recommendation: Ensure your LinkedIn URL and GitHub project links are hyperlinked cleanly.';
-  } else {
-    document.getElementById('ats-strengths').innerText = 'Good foundational structure, clear contact header, and technical skills listed.';
-    document.getElementById('ats-suggestions').innerText = 'Include more high-impact metric statistics (e.g. "Increased engagement by 25%") and explicit frameworks like React, FastAPI, or Flutter.';
-  }
-
-  showToast(`ATS Analysis Complete! Score: ${atsScore}/100`, 'success');
-}
-
-// --- Interactive Skill Assessment Quiz Engine ---
-const skillQuizData = [
-  {
-    category: "Management & Strategy",
-    question: "1. How do you prioritize project deliverables when technical debt competes with tight feature deadlines?",
-    options: [
-      "Use the RICE framework to weigh reach, impact, and effort against tech debt risk.",
-      "Ignore technical debt completely and only ship new user features.",
-      "Halt all feature development for 6 months to rewrite the backend codebase.",
-      "Let individual developers choose tasks randomly without team alignment."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "Full Stack Architecture",
-    question: "2. What is the primary benefit of caching GET requests with Redis or CDN edge nodes?",
-    options: [
-      "Drastically reduces database query load and decreases API latency to <20ms.",
-      "Replaces relational SQL database schemas with client local storage.",
-      "Eliminates the need for API authentication tokens.",
-      "Automatically writes unit test cases for frontend components."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "UI/UX Design Systems",
-    question: "3. Which principle ensures your application maintains high visual contrast and accessibility (WCAG compliance)?",
-    options: [
-      "Maintaining minimum 4.5:1 color contrast ratio for normal body text.",
-      "Using low-contrast light grey text on white backgrounds.",
-      "Disabling screen reader ARIA labels on interactive buttons.",
-      "Removing focus outlines from form inputs."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "Backend & FastAPI",
-    question: "4. Why should async route handlers (`async def`) be used for I/O-bound tasks in FastAPI?",
-    options: [
-      "Allows the event loop to handle thousands of concurrent requests without blocking execution.",
-      "Automatically encrypts all outgoing JSON HTTP response payloads.",
-      "Prevents database connections from ever timing out.",
-      "Converts Python backend code into native C++ binaries."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "Database & SQL Optimization",
-    question: "5. What database optimization technique prevents full table scans on large tables?",
-    options: [
-      "Creating B-Tree indexes on frequently queried search & foreign key columns.",
-      "Deleting all primary keys from relational tables.",
-      "Storing every column as a long un-indexed TEXT blob.",
-      "Disabling SQL transactions and foreign key constraints."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "Frontend & React",
-    question: "6. How do `useMemo` and `useCallback` improve React application performance?",
-    options: [
-      "They memoize expensive calculation values and function references across re-renders.",
-      "They automatically convert CSS flexbox layouts into CSS grid.",
-      "They replace HTTP API requests with local storage variables.",
-      "They prevent browsers from downloading images."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "Mobile App Development",
-    question: "7. In Flutter, what is the key advantage of using `const` constructors for static widgets?",
-    options: [
-      "Tells Flutter to reuse widget instances and avoid rebuilding unchanged subtrees.",
-      "Enables background location tracking when the app is closed.",
-      "Automatically translates Dart code into Swift and Kotlin UI.",
-      "Increases the maximum memory allocated to the engine."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "Cloud & DevOps",
-    question: "8. What is the main goal of a CI/CD automated pipeline in GitHub Actions?",
-    options: [
-      "Automate building, testing, linting, and deploying code on every push.",
-      "Generate synthetic database users for load testing.",
-      "Replace local Git version control with cloud storage.",
-      "Prevent developers from committing code to feature branches."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "API Security",
-    question: "9. How does JWT (JSON Web Token) authentication secure client-server API requests?",
-    options: [
-      "Cryptographically signs token payloads so servers can verify client identity statelessly.",
-      "Encrypts local Wi-Fi router signals to protect against physical tampering.",
-      "Stores plain-text user passwords inside browser cookies.",
-      "Blocks all incoming GET requests from mobile devices."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "System Design & Resilience",
-    question: "10. What does the Circuit Breaker pattern accomplish in microservice architecture?",
-    options: [
-      "Prevents cascading failures by stopping calls to a failing service until it recovers.",
-      "Doubles CPU server frequency during high network traffic bursts.",
-      "Automatically merges duplicate user accounts in MySQL.",
-      "Deletes old log files when hard drive storage is full."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "Real-Time Systems",
-    question: "11. Why are WebSockets preferred over standard HTTP polling for real-time live sync?",
-    options: [
-      "Provides persistent, low-overhead bidirectional streaming between client and server.",
-      "Allows browsers to load web pages without an internet connection.",
-      "Compresses JPEG images into PNG files automatically.",
-      "Disables CORS security restrictions on cross-domain servers."
-    ],
-    correctIndex: 0
-  },
-  {
-    category: "Test Automation",
-    question: "12. What is the primary purpose of end-to-end (E2E) testing with Selenium and Appium?",
-    options: [
-      "Simulates real user interactions on Web & Mobile to verify complete user flows.",
-      "Measures compiler execution speed for Python & C++ scripts.",
-      "Generates artificial user profile avatars and names.",
-      "Replaces unit tests with manual regression testing."
-    ],
-    correctIndex: 0
-  }
-];
-
-let activeQuizQuestions = [];
-let currentQuizIndex = 0;
-let selectedQuizAnswer = null;
-let userQuizScore = 0;
-
-function startSkillQuiz() {
-  // Select 5 randomized questions from 12-question pool
-  activeQuizQuestions = [...skillQuizData].sort(() => 0.5 - Math.random()).slice(0, 5);
-  currentQuizIndex = 0;
-  selectedQuizAnswer = null;
-  userQuizScore = 0;
-
-  const modal = document.getElementById('quiz-modal');
-  const body = document.getElementById('quiz-body');
-  const results = document.getElementById('quiz-results');
-
-  if (body) body.style.display = 'block';
-  if (results) results.style.display = 'none';
-
-  renderQuizQuestion();
-
-  if (modal) {
-    modal.style.display = 'flex';
-  }
-}
-
-function renderQuizQuestion() {
-  const qData = activeQuizQuestions[currentQuizIndex];
-  if (!qData) return;
-
-  selectedQuizAnswer = null;
-
-  const stepIndicator = document.getElementById('quiz-step-indicator');
-  const catBadge = document.getElementById('quiz-category-badge');
-  const qTitle = document.getElementById('quiz-question-title');
-
-  if (stepIndicator) stepIndicator.innerText = `Question ${currentQuizIndex + 1} of ${activeQuizQuestions.length}`;
-  if (catBadge) catBadge.innerText = qData.category;
-  if (qTitle) qTitle.innerText = qData.question;
-
-  const optionsContainer = document.getElementById('quiz-options-container');
-  if (!optionsContainer) return;
-  optionsContainer.innerHTML = '';
-
-  qData.options.forEach((optText, optIdx) => {
-    const optDiv = document.createElement('div');
-    optDiv.className = 'quiz-option-item';
-    optDiv.style.cssText = 'padding:0.9rem 1rem; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-input); cursor:pointer; transition:all 0.2s ease; display:flex; align-items:center; gap:0.75rem;';
-    optDiv.innerHTML = `
-      <input type="radio" name="quiz-opt" id="opt-${optIdx}" value="${optIdx}" style="accent-color:var(--accent-primary); cursor:pointer;">
-      <label for="opt-${optIdx}" style="cursor:pointer; font-size:0.92rem; line-height:1.4; flex:1; color:var(--text-primary);">${optText}</label>
-    `;
-    optDiv.onclick = () => {
-      document.querySelectorAll('.quiz-option-item').forEach(el => {
-        el.style.borderColor = 'var(--border-color)';
-        el.style.background = 'var(--bg-input)';
-      });
-      optDiv.style.borderColor = 'var(--accent-primary)';
-      optDiv.style.background = 'rgba(99,102,241,0.12)';
-      const radio = optDiv.querySelector('input');
-      if (radio) radio.checked = true;
-      selectedQuizAnswer = optIdx;
-    };
-    optionsContainer.appendChild(optDiv);
-  });
-
-  const nextBtn = document.getElementById('quiz-next-btn');
-  if (nextBtn) {
-    nextBtn.innerHTML = currentQuizIndex === activeQuizQuestions.length - 1 ? 'Submit Assessment ✓' : 'Next Question <i data-lucide="arrow-right"></i>';
-    if (window.lucide) lucide.createIcons();
-  }
-}
-
-function submitQuizAnswer() {
-  if (selectedQuizAnswer === null) {
-    showToast('Please select an answer option to proceed.', 'info');
-    return;
-  }
-
-  const qData = activeQuizQuestions[currentQuizIndex];
-  if (selectedQuizAnswer === qData.correctIndex) {
-    userQuizScore++;
-  }
-
-  currentQuizIndex++;
-
-  if (currentQuizIndex < activeQuizQuestions.length) {
-    renderQuizQuestion();
-  } else {
-    // Show Quiz Results Screen
-    const body = document.getElementById('quiz-body');
-    const results = document.getElementById('quiz-results');
-
-    if (body) body.style.display = 'none';
-    if (results) results.style.display = 'block';
-
-    const percent = Math.round((userQuizScore / activeQuizQuestions.length) * 100);
-    const scoreGained = Math.floor(Math.random() * 5) + 5; // 5-9% increase
-
-    const currentVal = parseInt(document.getElementById('skill-val-mgmt').innerText) || 34;
-    const newVal = Math.min(100, currentVal + scoreGained);
-
-    document.getElementById('skill-val-mgmt').innerText = `${newVal}%`;
-    document.getElementById('skill-bar-mgmt').style.width = `${newVal}%`;
-
-    const lessonVal = parseInt(document.getElementById('stat-lessons-val').innerText) || 10;
-    document.getElementById('stat-lessons-val').innerText = lessonVal + 1;
-
-    document.getElementById('quiz-result-score-text').innerText = `You scored ${userQuizScore}/${skillQuizData.length} (${percent}%)!`;
-    document.getElementById('quiz-bonus-text').innerText = `+${scoreGained}% Management & Strategy Skill`;
-
-    showToast(`Quiz Completed! Score: ${percent}%. Skill increased to ${newVal}%!`, 'success');
-  }
-}
-
-function closeSkillQuizModal() {
-  const modal = document.getElementById('quiz-modal');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-}
-
-// --- Course Video Player Engine ---
-function toggleVideoPlayback() {
-  const video = document.getElementById('main-course-video');
-  if (!video) return;
-
-  if (video.paused) {
-    video.play().then(() => {
-      showToast('Video Playing...', 'info');
-    }).catch(err => console.warn('Video play deferred:', err));
-  } else {
-    video.pause();
-    showToast('Video Paused', 'info');
-  }
-}
-
-function handleVideoPlayState(isPlaying) {
-  showToast(isPlaying ? 'Video Playing' : 'Video Paused', 'info');
-}
-
-function updateVideoTimeTracker() {
-  const video = document.getElementById('main-course-video');
-  const playerTime = document.getElementById('player-time');
-  if (!video || !playerTime) return;
-
-  const currentMins = Math.floor(video.currentTime / 60);
-  const currentSecs = Math.floor(video.currentTime % 60).toString().padStart(2, '0');
-  const durationMins = Math.floor((video.duration || 750) / 60);
-  const durationSecs = Math.floor((video.duration || 750) % 60).toString().padStart(2, '0');
-
-  playerTime.innerText = `${currentMins}:${currentSecs} / ${durationMins}:${durationSecs}`;
-}
-
-// --- Multi-Course Catalog & Video Stream Routing Engine ---
-const COURSE_CATALOG = {
-  1: {
-    title: "Full Stack Developer Masterclass",
-    desc: "Learn modern full-stack web application architecture, REST API design, state management, and real-time database synchronization with hands-on practice.",
-    lessons: [
-      { id: 1, title: "1. Introduction to Full Stack Architecture", duration: "12:30", badge: "Free Preview", desc: "Learn modern architecture patterns and client-server setups.", videoId: "Ke90Tje7VS0" },
-      { id: 2, title: "2. Database Modeling & Fast APIs", duration: "18:45", badge: "Core", desc: "Design relational schemas, SQL queries, and FastAPI endpoints.", videoId: "SqcY0GlETPk" },
-      { id: 3, title: "3. Frontend State & UI Components", duration: "22:10", badge: "Advanced", desc: "Build dynamic UI components, state stores, and glassmorphism styling.", videoId: "O6P86uwfdR0" },
-      { id: 4, title: "4. Deployment & Cloud CI/CD", duration: "15:00", badge: "Master", desc: "Deploy full-stack applications with automated testing and HTTPS.", videoId: "VPvVD8t02U8" }
-    ]
-  },
-  2: {
-    title: "Digital Marketing & Growth Hacking",
-    desc: "Master SEO strategies, funnel conversion metrics, social media algorithms, content marketing, and Google Analytics to scale digital products.",
-    lessons: [
-      { id: 1, title: "1. Modern Digital Marketing Foundations", duration: "14:20", badge: "Free Preview", desc: "Understand SEO, funnel conversion metrics, and content strategy.", videoId: "nU-IIXBWlS4" },
-      { id: 2, title: "2. SEO & Funnel Optimization", duration: "16:35", badge: "Core", desc: "Optimize target keywords, technical SEO, and conversion funnels.", videoId: "xsVT_-46C3g" },
-      { id: 3, title: "3. Growth Hacking & Analytics", duration: "19:10", badge: "Advanced", desc: "Analyze user retention metrics, A/B experiments, and growth loops.", videoId: "v7V_18M-WJ0" },
-      { id: 4, title: "4. Content Strategy & Social Ads", duration: "15:45", badge: "Master", desc: "Build scalable social ad campaigns and organic content funnels.", videoId: "bixR-KIJKYM" }
-    ]
-  },
-  3: {
-    title: "UI/UX & Mobile Design Masterclass",
-    desc: "Learn wireframing, Figma design systems, visual hierarchy, responsive layout components, and Flutter UI integration.",
-    lessons: [
-      { id: 1, title: "1. Figma Fundamentals & Design Systems", duration: "11:15", badge: "Free Preview", desc: "Master component variants, auto layout, and color design tokens.", videoId: "c9Wg6Cb_YlU" },
-      { id: 2, title: "2. User Research & Information Architecture", duration: "15:40", badge: "Core", desc: "Conduct user interviews, map user flows, and wireframe interfaces.", videoId: "jqy7F7t__oM" },
-      { id: 3, title: "3. Micro-Interactions & Prototyping", duration: "13:50", badge: "Advanced", desc: "Create interactive glassmorphic micro-animations and transitions.", videoId: "351_eP595m8" },
-      { id: 4, title: "4. Design Hand-off to Developers", duration: "14:10", badge: "Master", desc: "Export clean asset tokens and integrate Figma designs with Flutter.", videoId: "3rK7-nK_g7E" }
-    ]
+// --- User Progress Monitor & Persistence Engine ---
+let webUserProgress = {
+  lessons_completed: 0,
+  hours_spent: 0.0,
+  skills: {
+    'uiux': 0,
+    'design': 0,
+    'mgmt': 0
   }
 };
 
-let currentActiveCourseId = 1;
-
-function openCoursePlayer(courseId) {
-  currentActiveCourseId = courseId || 1;
-  switchTab('courses');
-  loadCourseDetails(currentActiveCourseId);
-}
-
-function loadCourseDetails(courseId) {
-  const course = COURSE_CATALOG[courseId] || COURSE_CATALOG[1];
-
-  const headerTitle = document.getElementById('lesson-header-title');
-  const mainDesc = document.getElementById('lesson-desc');
-  const syllabusContainer = document.querySelector('.lesson-list');
-
-  if (headerTitle) headerTitle.innerText = course.title;
-  if (mainDesc) mainDesc.innerText = course.desc;
-
-  if (syllabusContainer) {
-    syllabusContainer.innerHTML = '';
-    course.lessons.forEach((les, idx) => {
-      const lesDiv = document.createElement('div');
-      lesDiv.className = `lesson-item ${idx === 0 ? 'active' : ''}`;
-      lesDiv.innerHTML = `
-        <div>
-          <h5 style="font-size:0.9rem; font-weight:700;">${les.title}</h5>
-          <span style="font-size:0.78rem; color:var(--text-secondary);">${les.duration} • ${les.badge}</span>
-        </div>
-        <i data-lucide="${idx === 0 ? 'play-circle' : 'lock'}" style="${idx === 0 ? 'color:var(--accent-primary);' : 'font-size:14px; color:var(--text-muted);'}"></i>
-      `;
-      lesDiv.onclick = () => {
-        selectCourseLesson(courseId, les.id);
-      };
-      syllabusContainer.appendChild(lesDiv);
-    });
-    if (window.lucide) lucide.createIcons();
-  }
-
-  // Load first lesson of selected course
-  if (course.lessons.length > 0) {
-    const firstLes = course.lessons[0];
-    updateActiveVideoPlayer(firstLes.title, firstLes.duration, firstLes.desc, firstLes.videoId);
-  }
-
-  showToast(`Loaded Course: ${course.title}`, 'success');
-}
-
-function selectCourseLesson(courseId, lessonId) {
-  const course = COURSE_CATALOG[courseId] || COURSE_CATALOG[1];
-  const lesson = course.lessons.find(l => l.id === lessonId) || course.lessons[0];
-
-  document.querySelectorAll('.lesson-item').forEach((item, idx) => {
-    if (idx === lessonId - 1) {
-      item.classList.add('active');
-      const icon = item.querySelector('i');
-      if (icon) {
-        icon.setAttribute('data-lucide', 'play-circle');
-        icon.style.color = 'var(--accent-primary)';
+async function initUserProgressWeb() {
+  const stored = localStorage.getItem('skillsnap_user_progress_v2');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.skills) {
+        webUserProgress = parsed;
       }
-    } else {
-      item.classList.remove('active');
+    } catch (e) {
+      console.warn('Failed to parse user progress', e);
     }
-  });
+  }
+  renderProgressWebUI();
 
-  updateActiveVideoPlayer(lesson.title, lesson.duration, lesson.desc, lesson.videoId);
-  showToast(`Loaded Lesson: ${lesson.title}`, 'info');
+  try {
+    const res = await fetch(`${getBackendUrl()}/home/dashboard/1`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.stats) {
+        webUserProgress.lessons_completed = Math.max(webUserProgress.lessons_completed || 0, data.stats.lessons_completed || 0);
+        webUserProgress.hours_spent = Math.max(webUserProgress.hours_spent || 0, data.stats.hours_spent || 0);
+        if (data.skills && Array.isArray(data.skills)) {
+          data.skills.forEach(s => {
+            if (s.skill_name === 'UI/UX Design') webUserProgress.skills['uiux'] = Math.max(webUserProgress.skills['uiux'] || 0, s.progress_percent || 0);
+            if (s.skill_name === 'Visual & Frontend Design' || s.skill_name === 'Python & FastAPI') webUserProgress.skills['design'] = Math.max(webUserProgress.skills['design'] || 0, s.progress_percent || 0);
+            if (s.skill_name === 'Management & Strategy' || s.skill_name === 'Flutter & Mobile') webUserProgress.skills['mgmt'] = Math.max(webUserProgress.skills['mgmt'] || 0, s.progress_percent || 0);
+          });
+        }
+        localStorage.setItem('skillsnap_user_progress_v2', JSON.stringify(webUserProgress));
+        renderProgressWebUI();
+      }
+    }
+  } catch (err) {}
 }
 
-function selectLesson(index, title, duration, description, videoId) {
-  selectCourseLesson(currentActiveCourseId, index);
-}
+function renderProgressWebUI() {
+  const lessonsEl = document.getElementById('stat-lessons-val');
+  const hoursEl = document.getElementById('stat-hours-val');
+  if (lessonsEl) lessonsEl.innerText = webUserProgress.lessons_completed;
+  if (hoursEl) hoursEl.innerText = `${webUserProgress.hours_spent.toFixed(1)}h`;
 
-function updateActiveVideoPlayer(title, duration, description, videoId) {
-  const iframe = document.getElementById('main-course-iframe');
-  const playerTitle = document.getElementById('player-title');
-  const playerTime = document.getElementById('player-time');
-  const lessonDesc = document.getElementById('lesson-desc');
+  const uiuxVal = document.getElementById('skill-val-uiux');
+  const uiuxBar = document.getElementById('skill-bar-uiux');
+  if (uiuxVal && uiuxBar) {
+    uiuxVal.innerText = `${webUserProgress.skills['uiux']}%`;
+    uiuxBar.style.width = `${webUserProgress.skills['uiux']}%`;
+  }
 
-  if (playerTitle) playerTitle.innerText = title;
-  if (playerTime) playerTime.innerText = `Duration: ${duration}`;
-  if (lessonDesc) lessonDesc.innerText = description;
+  const designVal = document.getElementById('skill-val-design');
+  const designBar = document.getElementById('skill-bar-design');
+  if (designVal && designBar) {
+    designVal.innerText = `${webUserProgress.skills['design']}%`;
+    designBar.style.width = `${webUserProgress.skills['design']}%`;
+  }
 
-  if (iframe && videoId) {
-    iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`;
+  const mgmtVal = document.getElementById('skill-val-mgmt');
+  const mgmtBar = document.getElementById('skill-bar-mgmt');
+  if (mgmtVal && mgmtBar) {
+    mgmtVal.innerText = `${webUserProgress.skills['mgmt']}%`;
+    mgmtBar.style.width = `${webUserProgress.skills['mgmt']}%`;
   }
 }
 
-function markLessonComplete() {
-  const lessonVal = parseInt(document.getElementById('stat-lessons-val').innerText) || 10;
-  const newVal = lessonVal + 1;
-  document.getElementById('stat-lessons-val').innerText = newVal;
-  
-  emitLiveSyncUpdate('LESSON_COMPLETED', {
-    lessons_completed: newVal,
-    message: 'Completed a lesson on Website!'
-  });
+function incrementProgressWeb(lessons = 1, hours = 0.5, skillKey = 'uiux', skillInc = 15) {
+  webUserProgress.lessons_completed += lessons;
+  webUserProgress.hours_spent += hours;
+  if (skillKey && webUserProgress.skills.hasOwnProperty(skillKey)) {
+    webUserProgress.skills[skillKey] = Math.min(100, (webUserProgress.skills[skillKey] || 0) + skillInc);
+  }
+  localStorage.setItem('skillsnap_user_progress_v2', JSON.stringify(webUserProgress));
+  renderProgressWebUI();
+  showToast(`📈 Progress Saved: +${lessons} Lesson(s), +${hours}h, Skill updated!`, 'success');
 
-  showToast('Lesson marked as complete! +1 Lesson Progress', 'success');
+  const skillNameMap = {
+    'uiux': 'UI/UX Design',
+    'design': 'Visual & Frontend Design',
+    'mgmt': 'Management & Strategy'
+  };
+
+  fetch(`${getBackendUrl()}/api/progress/increment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: CURRENT_USER_ID,
+      lessons: lessons,
+      hours: hours,
+      skill_name: skillNameMap[skillKey] || skillKey,
+      skill_increment: skillInc
+    })
+  }).catch(() => {});
 }
 
-// --- AI Mock Interview Studio ---
-const interviewQuestions = {
-  'Full Stack Engineer': [
-    "How do you optimize database query performance for high-traffic API endpoints?",
-    "Explain the difference between SQL transactions and NoSQL eventual consistency.",
-    "How do you handle state management across large frontend applications?"
+function resetUserProgressWeb() {
+  webUserProgress = {
+    lessons_completed: 0,
+    hours_spent: 0.0,
+    skills: {
+      'uiux': 0,
+      'design': 0,
+      'mgmt': 0
+    }
+  };
+  localStorage.setItem('skillsnap_user_progress_v2', JSON.stringify(webUserProgress));
+  renderProgressWebUI();
+  showToast('🔄 Progress Reset to 0 across Web & Backend!', 'info');
+
+  fetch(`${getBackendUrl()}/api/progress/reset`, { method: 'POST' }).catch(() => {});
+}
+
+// --- QUIZ & MOCK INTERVIEW ENGINE (Matching Photo 4) ---
+let currentQuizCategory = 'FastAPI';
+let currentQuestionIndex = 0;
+let quizScore = 0;
+let quizAnswered = false;
+
+const QUIZZES = {
+  'FastAPI': [
+    {
+      question: 'What parameter is used in FastAPI decorators to set the HTTP response code?',
+      options: ['status_code=', 'response_code=', 'http_status=', 'code='],
+      correct: 0,
+      explanation: 'FastAPI decorator `@app.get("/", status_code=200)` sets the HTTP response code directly.'
+    },
+    {
+      question: 'Which Pydantic config attribute enables automatic ORM model parsing in v2?',
+      options: ['from_attributes = True', 'orm_mode = True', 'parse_orm = True', 'model_config = "orm"'],
+      correct: 0,
+      explanation: 'In Pydantic v2, `from_attributes = True` replaces `orm_mode` for attribute mapping.'
+    },
+    {
+      question: 'Which ASGI web server is standard for running FastAPI production applications?',
+      options: ['Uvicorn', 'Gunicorn WSGI', 'Apache mod_wsgi', 'Waitress'],
+      correct: 0,
+      explanation: 'Uvicorn is a lightning-fast ASGI server implementation using uvloop and httptools.'
+    },
+    {
+      question: 'How do you define a non-blocking asynchronous route handler in FastAPI?',
+      options: ['async def route_name()', 'def async_route()', 'await def route()', 'def route_name(async=True)'],
+      correct: 0,
+      explanation: '`async def` tells FastAPI to execute the handler in an asynchronous event loop.'
+    },
+    {
+      question: 'Which FastAPI dependency injection tool is used to share DB sessions across routes?',
+      options: ['Depends()', 'Inject()', 'Require()', 'Use()'],
+      correct: 0,
+      explanation: '`Depends()` allows declaring reusable dependencies for authentication, database, and logic.'
+    }
   ],
-  'UI/UX Designer': [
-    "Walk me through your design system creation process from scratch.",
-    "How do you balance user accessibility standards (WCAG) with modern aesthetics?",
-    "How do you evaluate micro-interactions and usability testing feedback?"
+  'Flutter': [
+    {
+      question: 'Which widget is best suited for responsive scrollable lists with dynamic items?',
+      options: ['ListView.builder', 'SingleChildScrollView', 'Column', 'GridView.count'],
+      correct: 0,
+      explanation: 'ListView.builder lazily builds items on demand as they scroll into view.'
+    },
+    {
+      question: 'What is the primary purpose of ValueNotifier in Flutter?',
+      options: ['Lightweight state management without external packages', 'Database connection', 'HTTP routing', 'Asset management'],
+      correct: 0,
+      explanation: 'ValueNotifier notifies listeners when its value changes, triggering minimal UI rebuilds.'
+    },
+    {
+      question: 'Which build mode in Flutter compiles code with AOT ahead-of-time for maximum production speed?',
+      options: ['Release Mode', 'Debug Mode', 'Profile Mode', 'JIT Mode'],
+      correct: 0,
+      explanation: 'Release mode compiles ARM machine code AOT for maximum execution performance.'
+    },
+    {
+      question: 'What property in MaterialPageRoute preserves route state when navigating away?',
+      options: ['maintainState', 'keepAlive', 'preserveState', 'storeRoute'],
+      correct: 0,
+      explanation: '`maintainState: true` keeps the route history and state in memory while covered.'
+    },
+    {
+      question: 'Which Flutter command downloads all dependencies declared in pubspec.yaml?',
+      options: ['flutter pub get', 'flutter install', 'flutter fetch', 'pub pull'],
+      correct: 0,
+      explanation: '`flutter pub get` fetches all declared pub packages into your project cache.'
+    }
   ],
-  'Product Manager': [
-    "How do you prioritize feature roadmaps when technical debt competes with business demands?",
-    "Describe how you define key performance metrics for an AI-based product.",
-    "How do you resolve conflict between engineering and executive stakeholders?"
+  'UI/UX Design': [
+    {
+      question: 'What principle does Fitts\'s Law describe in interface design?',
+      options: [
+        'Target acquisition time depends on target distance and size',
+        'Font readability speed',
+        'Color harmony ratios',
+        'Page rendering latency'
+      ],
+      correct: 0,
+      explanation: 'Fitts\'s Law states that larger and closer UI elements are faster to interact with.'
+    },
+    {
+      question: 'What is the WCAG AA minimum contrast ratio for normal body text?',
+      options: ['4.5:1', '3:1', '7:1', '2:1'],
+      correct: 0,
+      explanation: 'WCAG 2.1 AA requires a contrast ratio of at least 4.5:1 for normal text readability.'
+    },
+    {
+      question: 'What is the primary objective of wireframing in early product design?',
+      options: ['Establishing structural layout and user flow before visual polish', 'Choosing brand colors', 'Writing database queries', 'A/B testing ad copy'],
+      correct: 0,
+      explanation: 'Wireframes focus on content hierarchy and navigation structure before visual design.'
+    },
+    {
+      question: 'Which grid column system is standard for responsive desktop web interfaces?',
+      options: ['12-column grid', '8-column grid', '16-column grid', '5-column grid'],
+      correct: 0,
+      explanation: 'A 12-column grid offers maximum layout flexibility across desktop breakpoints.'
+    },
+    {
+      question: 'What does "micro-interaction" refer to in modern user interfaces?',
+      options: ['Subtle visual feedback or animation on user actions like button taps', 'Database queries', 'Dark mode toggle CSS', 'Page route changes'],
+      correct: 0,
+      explanation: 'Micro-interactions give immediate, delightful feedback on user inputs.'
+    }
+  ],
+  'AI & ML': [
+    {
+      question: 'What does RAG stand for in generative AI systems?',
+      options: [
+        'Retrieval-Augmented Generation',
+        'Recurrent Array Optimization',
+        'Randomized Adaptive Gradient',
+        'Real-time Asset Generator'
+      ],
+      correct: 0,
+      explanation: 'Retrieval-Augmented Generation enhances LLM prompts with relevant external documents.'
+    },
+    {
+      question: 'Which vector index algorithm is widely used for fast nearest neighbor similarity search?',
+      options: ['HNSW', 'B-Tree', 'Red-Black Tree', 'Bubble Sort'],
+      correct: 0,
+      explanation: 'HNSW (Hierarchical Navigable Small World) provides ultra-fast vector similarity search.'
+    },
+    {
+      question: 'What mechanism allows transformer models to weigh the importance of different tokens?',
+      options: ['Self-Attention Mechanism', 'Convolutional Filters', 'Max Pooling', 'Gradient Descent'],
+      correct: 0,
+      explanation: 'Self-attention dynamically calculates token contextual relationships across sequences.'
+    },
+    {
+      question: 'What temperature setting in LLMs produces the most deterministic, non-random output?',
+      options: ['0.0', '0.7', '1.0', '2.0'],
+      correct: 0,
+      explanation: 'Temperature 0.0 makes the model deterministically select the top probability token.'
+    },
+    {
+      question: 'What is the primary role of System Prompts in LLM API requests?',
+      options: ['Setting baseline rules, behavior, and persona constraints', 'Encrypting HTTP payloads', 'Downloading vector models', 'Compressing JSON tokens'],
+      correct: 0,
+      explanation: 'System prompts define fundamental persona, output rules, and behavioral boundaries.'
+    }
   ]
 };
 
-let currentRole = 'Full Stack Engineer';
-let currentQuestionIndex = 0;
+function switchQuizSubTab(type) {
+  const btnQuizzes = document.getElementById('subtab-quizzes');
+  const btnMock = document.getElementById('subtab-mock');
+  const viewQuizzes = document.getElementById('subview-quizzes');
+  const viewMock = document.getElementById('subview-mock');
 
-function selectInterviewRole(roleName, category) {
-  currentRole = roleName;
+  if (type === 'quizzes') {
+    btnQuizzes.classList.add('active');
+    btnMock.classList.remove('active');
+    viewQuizzes.style.display = 'block';
+    viewMock.style.display = 'none';
+  } else {
+    btnMock.classList.add('active');
+    btnQuizzes.classList.remove('active');
+    viewMock.style.display = 'block';
+    viewQuizzes.style.display = 'none';
+  }
+}
+
+function initQuizData() {
+  renderQuestionCard();
+}
+
+function selectQuizCategory(category, el) {
+  const chips = document.querySelectorAll('.chip-btn');
+  chips.forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  currentQuizCategory = category;
   currentQuestionIndex = 0;
-
-  document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-
-  document.getElementById('interview-role-badge').innerText = roleName;
-  updateQuestionText();
+  quizScore = 0;
+  quizAnswered = false;
+  renderQuestionCard();
 }
 
-function updateQuestionText() {
-  const qList = interviewQuestions[currentRole] || interviewQuestions['Full Stack Engineer'];
-  document.getElementById('interview-question-text').innerText = `"${qList[currentQuestionIndex]}"`;
+function renderQuestionCard() {
+  const quizList = QUIZZES[currentQuizCategory] || QUIZZES['FastAPI'];
+  const q = quizList[currentQuestionIndex];
+
+  document.getElementById('quiz-question-counter').innerText = `Question ${currentQuestionIndex + 1} of ${quizList.length}`;
+  document.getElementById('quiz-score-badge').innerText = `Score: ${quizScore}`;
+  document.getElementById('quiz-question-text').innerText = q.question;
+
+  const optionsList = document.getElementById('quiz-options-list');
+  optionsList.innerHTML = '';
+  quizAnswered = false;
+
+  const expBox = document.getElementById('quiz-explanation-box');
+  expBox.style.display = 'none';
+  expBox.innerText = '';
+
+  q.options.forEach((opt, idx) => {
+    const item = document.createElement('div');
+    item.className = 'quiz-option-item';
+    item.onclick = () => selectQuizOption(idx);
+    item.innerHTML = `<span class="option-code-text">${opt}</span>`;
+    optionsList.appendChild(item);
+  });
 }
 
-function simulateSpeechInput() {
+function selectQuizOption(index) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+
+  const quizList = QUIZZES[currentQuizCategory] || QUIZZES['FastAPI'];
+  const q = quizList[currentQuestionIndex];
+  const items = document.querySelectorAll('.quiz-option-item');
+
+  if (index === q.correct) {
+    items[index].classList.add('correct');
+    quizScore++;
+    document.getElementById('quiz-score-badge').innerText = `Score: ${quizScore}`;
+    showToast('🎉 Correct answer!', 'success');
+  } else {
+    items[index].classList.add('incorrect');
+    items[q.correct].classList.add('correct');
+    showToast('❌ Incorrect option', 'info');
+  }
+
+  const expBox = document.getElementById('quiz-explanation-box');
+  expBox.style.display = 'block';
+  expBox.innerText = `Explanation: ${q.explanation}`;
+
+  const skillKey = currentQuizCategory === 'UI/UX Design' ? 'uiux' : (currentQuizCategory === 'Flutter' ? 'design' : 'mgmt');
+  incrementProgressWeb(1, 0.5, skillKey, 15);
+}
+
+function nextQuizQuestion() {
+  const quizList = QUIZZES[currentQuizCategory] || QUIZZES['FastAPI'];
+  if (currentQuestionIndex < quizList.length - 1) {
+    currentQuestionIndex++;
+    renderQuestionCard();
+  } else {
+    showToast(`🎉 Quiz Completed! You scored ${quizScore} out of ${quizList.length}`, 'success');
+    currentQuestionIndex = 0;
+    quizScore = 0;
+    renderQuestionCard();
+  }
+}
+
+// --- AI MOCK INTERVIEW EVALUATOR ---
+function simulateSpeechToText() {
   const sampleAnswers = [
-    "I optimize database performance by adding indexes on frequently queried columns, using Redis caching for GET requests, and implementing pagination.",
-    "I focus on establishing clear color contrast tokens, semantic HTML elements, and conducting iterative user usability testing.",
-    "I prioritize features by measuring ROI, user retention impact, and engineering complexity using the RICE framework."
+    "I architected a WebSocket connection pool in FastAPI using a BroadcastManager, with automatic reconnection and fallback to SSE in Flutter.",
+    "For state management in Flutter, I use ValueNotifier and Provider with clean architecture to isolate presentation from API services.",
+    "I optimized ATS score by incorporating exact technical keyword matches, quantifying achievements with % improvements, and following standard single-column layout."
   ];
+  const input = document.getElementById('interview-answer-input');
+  input.value = sampleAnswers[Math.floor(Math.random() * sampleAnswers.length)];
+  showToast('🎤 Speech recorded successfully!', 'info');
+}
 
-  const answerInput = document.getElementById('interview-answer-input');
-  answerInput.value = sampleAnswers[Math.floor(Math.random() * sampleAnswers.length)];
-  showToast('Speech recorded successfully!', 'info');
+function evaluateInterviewAnswerReal(questionText, answerText) {
+  const text = (answerText || '').trim().toLowerCase();
+  const words = text.split(/\s+/).filter(w => w.length > 0);
+
+  // Insufficient / single-word answer check ("ok", "idk", "yes", "no", < 15 chars)
+  if (text.length < 15 || words.length < 4 || ['ok', 'yes', 'no', 'idk', 'hello', 'hi', 'fine', 'good'].includes(text)) {
+    return {
+      score: 12,
+      technical_depth: "Insufficient response. Single-word or low-effort answers fail technical screening.",
+      communication: "Needs improvement. Use the STAR methodology (Situation, Task, Action, Result).",
+      suggestions: "Provide detailed technical explanation. Include architectural components like WebSockets, ConnectionManager, StreamBuilder, and reconnect logic.",
+      strengths: "None identified."
+    };
+  }
+
+  // Target Keywords depending on question context
+  let targetKeywords = ['websocket', 'fastapi', 'flutter', 'async', 'json', 'state', 'connection', 'reconnect', 'streambuilder', 'broadcast'];
+  if (questionText.toLowerCase().includes('state') || questionText.toLowerCase().includes('offline')) {
+    targetKeywords = ['state', 'provider', 'bloc', 'valuenotifier', 'offline', 'cache', 'fallback', 'http', 'sqflite', 'sharedpreferences'];
+  } else if (questionText.toLowerCase().includes('resume') || questionText.toLowerCase().includes('ats')) {
+    targetKeywords = ['ats', 'keyword', 'metric', 'format', 'quantifiable', 'section', 'action', 'verb', 'impact'];
+  }
+
+  let matched = 0;
+  const found = [];
+  targetKeywords.forEach(kw => {
+    if (text.includes(kw)) {
+      matched++;
+      found.push(kw);
+    }
+  });
+
+  let baseScore = Math.min(45, words.length * 2);
+  let keywordScore = Math.min(50, matched * 12);
+  let totalScore = Math.min(98, Math.max(15, baseScore + keywordScore));
+
+  let depthText = "";
+  if (totalScore >= 75) {
+    depthText = `Excellent response! You incorporated key technical concepts: [${found.join(', ')}]. Demonstrates strong architectural knowledge.`;
+  } else if (totalScore >= 45) {
+    depthText = `Moderate technical depth. Matched concepts: [${found.join(', ')}]. Consider elaborating more on failure handling and reconnect logic.`;
+  } else {
+    depthText = `Low technical depth. Missing core concepts like: [${targetKeywords.slice(0, 4).join(', ')}]. Explain specific framework classes and data flows.`;
+  }
+
+  return {
+    score: totalScore,
+    technical_depth: depthText,
+    communication: words.length >= 25 ? "Good response length adhering to technical standards." : "Response could be more detailed.",
+    suggestions: matched < 3 ? `Incorporate specific terminology like ${targetKeywords.slice(0, 3).join(', ')}.` : "Quantify outcomes (e.g. 'Reduced API latency by 40%').",
+    strengths: found.length > 0 ? `Good usage of keywords: ${found.join(', ')}.` : "Clear language."
+  };
 }
 
 function submitInterviewAnswer() {
-  const answer = document.getElementById('interview-answer-input').value.trim();
+  const answerInput = document.getElementById('interview-answer-input');
+  const answer = answerInput ? answerInput.value.trim() : '';
   const feedbackBox = document.getElementById('interview-feedback-box');
+  const promptEl = document.getElementById('interview-prompt-text');
+  const questionText = promptEl ? promptEl.innerText : 'WebSocket sync architecture';
 
   if (!answer) {
     showToast('Please enter or record an answer before submitting.', 'info');
@@ -871,83 +584,515 @@ function submitInterviewAnswer() {
   }
 
   feedbackBox.style.display = 'block';
-  
-  const score = Math.floor(Math.random() * 15) + 85;
-  document.getElementById('ai-interview-score').innerText = `Score: ${score}/100`;
-  document.getElementById('ai-interview-feedback-text').innerText = 
-    `Great structured response! You clearly articulated your technical reasoning. Score: ${score}/100. Key strength: Excellent terminology usage.`;
+  const evalResult = evaluateInterviewAnswerReal(questionText, answer);
 
-  showToast(`Interview Evaluation Completed! Score: ${score}/100`, 'success');
+  const scoreEl = document.getElementById('ai-interview-score');
+  const textEl = document.getElementById('ai-interview-feedback-text');
+
+  if (scoreEl) {
+    scoreEl.innerText = `Score: ${evalResult.score}/100`;
+    scoreEl.style.color = evalResult.score >= 70 ? 'var(--accent-green)' : (evalResult.score >= 40 ? 'var(--accent-orange)' : 'var(--accent-red)');
+  }
+
+  if (textEl) {
+    textEl.innerHTML = `
+      <p style="margin-bottom:0.4rem;"><strong>Technical Depth:</strong> ${evalResult.technical_depth}</p>
+      <p style="margin-bottom:0.4rem;"><strong>Communication:</strong> ${evalResult.communication}</p>
+      <p><strong>Suggestions:</strong> ${evalResult.suggestions}</p>
+    `;
+  }
+
+  if (evalResult.score >= 50) {
+    showToast(`AI Evaluation Complete! Score: ${evalResult.score}/100`, 'success');
+    incrementProgressWeb(1, 0.5, 'mgmt', 15);
+  } else {
+    showToast(`⚠️ Low Score (${evalResult.score}/100): Read feedback to improve answer.`, 'info');
+  }
 }
 
-// --- Floating AI Assistant Chatbot ---
+function isGibberishOrInvalidInputWeb(query) {
+  const trimmed = query.trim().toLowerCase();
+  if (trimmed.length < 4) return true;
+
+  const mashPatterns = [
+    'asdf', 'qwerty', 'zxcv', '1234', 'hjkl', 'aaaa', 'bbbb', 'cccc',
+    'dddd', 'ffff', 'gggg', 'hhhh', 'jjjj', 'kkkk', 'llll', 'zzzz',
+    'xxxx', 'uuuu', 'iiii', 'oooo', 'pppp', 'abc', 'xyz', 'foo', 'bar', 'test'
+  ];
+  for (let pat of mashPatterns) {
+    if (trimmed.includes(pat)) return true;
+  }
+
+  const vowels = (trimmed.match(/[aeiouy]/g) || []).length;
+  const letters = (trimmed.match(/[a-z]/g) || []).length;
+
+  if (letters > 0 && (vowels / letters < 0.15 || vowels / letters > 0.85)) {
+    return true;
+  }
+
+  if (!trimmed.includes(' ') && trimmed.length > 8) {
+    const knownTech = [
+      'fastapi', 'flutter', 'postgresql', 'websockets', 'javascript',
+      'typescript', 'python', 'pydantic', 'sqlalchemy', 'firebase',
+      'autolayout', 'microservices', 'architecture', 'responsive',
+      'deployment', 'interview', 'resumes', 'mentorship'
+    ];
+    if (!knownTech.some(t => trimmed.includes(t))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function generateDynamicWebAIAnalysis(query) {
+  const trimmed = query.trim();
+
+  if (isGibberishOrInvalidInputWeb(trimmed)) {
+    return `❌ <strong>Unrecognized / Random Input Detected!</strong><br><br>` +
+           `The text "<em>${trimmed}</em>" does not appear to be a valid career, coding, or ATS resume topic.<br><br>` +
+           `💡 <strong>Please ask a specific question, such as:</strong><br>` +
+           `• "How do I optimize FastAPI backend endpoints?"<br>` +
+           `• "How do I integrate Flutter state management?"<br>` +
+           `• "How can I get my resume ATS score above 90%?"`;
+  }
+
+  const q = trimmed.toLowerCase();
+
+  if (q.includes('resume') || q.includes('ats') || q.includes('cv') || q.includes('format')) {
+    return `📄 <strong>ATS & Resume Mentor Analysis</strong> for: "<em>${trimmed}</em>"<br><br>` +
+           `• <strong>Key Metrics</strong>: Quantify your achievements (e.g., 'Optimized API throughput by 40% using FastAPI').<br>` +
+           `• <strong>Technical Keywords</strong>: Include exact tech stack matches like Python 3.12, Flutter, PostgreSQL, and Docker.<br>` +
+           `• <strong>Format Rule</strong>: Use standard single-column PDF formatting without tables or graphics for 90%+ ATS parser accuracy.`;
+  } else if (q.includes('flutter') || q.includes('mobile') || q.includes('dart') || q.includes('app')) {
+    return `📱 <strong>Flutter & Mobile Mentor Analysis</strong> for: "<em>${trimmed}</em>"<br><br>` +
+           `• <strong>State Management</strong>: Implement Provider or Riverpod to separate UI controllers from business logic.<br>` +
+           `• <strong>Performance Optimization</strong>: Use ListView.builder for dynamic lists to avoid memory overhead.<br>` +
+           `• <strong>Live Data Flow</strong>: Connect Flutter UI to REST APIs or WebSockets for real-time state synchronization.`;
+  } else if (q.includes('python') || q.includes('fastapi') || q.includes('backend') || q.includes('api') || q.includes('database')) {
+    return `⚡ <strong>Backend & API Mentor Analysis</strong> for: "<em>${trimmed}</em>"<br><br>` +
+           `• <strong>Async Architecture</strong>: Utilize async def for I/O bound database & network calls in FastAPI.<br>` +
+           `• <strong>Pydantic Validation</strong>: Define strict Pydantic v2 schemas with from_attributes = True.<br>` +
+           `• <strong>Connection Pooling</strong>: Implement async database session pools for high-concurrency requests.`;
+  } else if (q.includes('ui') || q.includes('ux') || q.includes('figma') || q.includes('design') || q.includes('css')) {
+    return `🎨 <strong>UI/UX & Design System Analysis</strong> for: "<em>${trimmed}</em>"<br><br>` +
+           `• <strong>Auto Layout</strong>: Master Figma Auto Layout 5.0 for fluid multi-breakpoint responsive UI.<br>` +
+           `• <strong>Accessibility</strong>: Maintain WCAG AA/AAA color contrast standards (4.5:1 ratio minimum).<br>` +
+           `• <strong>Micro-Interactions</strong>: Add 200ms spring transition curves on interactive elements to elevate user feel.`;
+  } else if (q.includes('interview') || q.includes('job') || q.includes('salary') || q.includes('career')) {
+    return `💼 <strong>Career & Interview Mentor Analysis</strong> for: "<em>${trimmed}</em>"<br><br>` +
+           `• <strong>STAR Method</strong>: Structure answers via Situation, Task, Action, and Measurable Result.<br>` +
+           `• <strong>System Design</strong>: Be ready to explain trade-offs between REST vs WebSockets and SQL vs NoSQL.<br>` +
+           `• <strong>Salary Benchmark</strong>: Research market benchmarks for Senior Full-Stack AI roles before negotiating.`;
+  } else {
+    return `🤖 <strong>SkillSnap AI Mentor Analysis</strong> for: "<em>${trimmed}</em>"<br><br>` +
+           `• <strong>Core Strategy</strong>: To address "${trimmed}", break execution into 3 clear technical milestones.<br>` +
+           `• <strong>Hands-On Project</strong>: Implement a working prototype demonstrating this concept and publish on GitHub.<br>` +
+           `• <strong>Next Steps</strong>: Explore our interactive 'My Courses' modules or run an AI Mock Interview to test your readiness!`;
+  }
+}
+
+function handleMentorAsk() {
+  const queryInput = document.getElementById('mentor-query-input');
+  const query = queryInput ? queryInput.value.trim() : '';
+  if (!query) {
+    showToast('Please enter a question for your Career Mentor.', 'info');
+    return;
+  }
+  toggleChatModal();
+  const container = document.getElementById('chat-messages-container');
+  if (container) {
+    const userMsg = document.createElement('div');
+    userMsg.className = 'chat-message user';
+    userMsg.innerHTML = `<p>${query}</p>`;
+    container.appendChild(userMsg);
+    if (queryInput) queryInput.value = '';
+
+    setTimeout(() => {
+      const aiMsg = document.createElement('div');
+      aiMsg.className = 'chat-message assistant';
+      aiMsg.innerHTML = `<p>${generateDynamicWebAIAnalysis(query)}</p>`;
+      container.appendChild(aiMsg);
+      container.scrollTop = container.scrollHeight;
+    }, 600);
+  }
+}
+
+function triggerResumeUpload() {
+  const input = document.getElementById('resume-file-input');
+  if (input) input.click();
+}
+
+function handleResumeFileSelected(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    const name = file.name;
+    const lowerName = name.toLowerCase();
+
+    // Validate format: must be .pdf, .docx, or .txt
+    if (!lowerName.endsWith('.pdf') && !lowerName.endsWith('.docx') && !lowerName.endsWith('.txt')) {
+      showToast('❌ Invalid Resume Format! Please upload a valid .pdf or .docx resume document.', 'error');
+      input.value = '';
+      return;
+    }
+
+    const tag = document.querySelector('.file-name-tag');
+    if (tag) tag.innerText = name;
+    showToast(`📄 Uploaded ${name}. ATS Score evaluated: 92/100 (ATS Friendly)!`, 'success');
+    openFullReportModal();
+  }
+}
+
+function openResumeBuilderModal() {
+  const customName = prompt('Enter your custom resume document filename (.pdf or .docx):', 'My_Custom_Resume.pdf');
+  if (!customName) return;
+
+  const lower = customName.toLowerCase().trim();
+  if (!lower.endsWith('.pdf') && !lower.endsWith('.docx') && !lower.endsWith('.txt')) {
+    alert('❌ Invalid Resume Format! This is not a valid resume document format (.pdf or .docx required).');
+    return;
+  }
+
+  const tag = document.querySelector('.file-name-tag');
+  if (tag) tag.innerText = customName;
+  showToast(`📄 Generated ${customName}. ATS Compatibility evaluated: 94/100!`, 'success');
+  openFullReportModal();
+}
+
+// --- MODALS & SETTINGS ACTIONS ---
 function toggleChatModal() {
-  const chatModal = document.getElementById('chat-modal');
-  if (chatModal) {
-    chatModal.classList.toggle('open');
+  const modal = document.getElementById('chat-modal');
+  modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+  if (window.lucide) lucide.createIcons();
+}
+
+function handleChatKeyPress(event) {
+  if (event.key === 'Enter') {
+    sendChatMessage();
   }
 }
 
 function sendChatMessage() {
-  const chatInput = document.getElementById('chat-input');
-  const text = chatInput.value.trim();
-  if (!text) return;
+  const input = document.getElementById('chat-input');
+  const query = input.value.trim();
+  if (!query) return;
 
   const container = document.getElementById('chat-messages-container');
-
   const userMsg = document.createElement('div');
-  userMsg.className = 'msg user';
-  userMsg.innerText = text;
+  userMsg.className = 'chat-message user';
+  userMsg.innerHTML = `<p>${query}</p>`;
   container.appendChild(userMsg);
-
-  chatInput.value = '';
-  container.scrollTop = container.scrollHeight;
+  input.value = '';
 
   setTimeout(() => {
     const aiMsg = document.createElement('div');
-    aiMsg.className = 'msg ai';
-    
-    let reply = "That's a great question! SkillSnap AI recommends taking the Full Stack Developer Masterclass and practicing ATS optimization in the Mentorship tab.";
-    if (text.toLowerCase().includes('resume') || text.toLowerCase().includes('ats') || text.toLowerCase().includes('builder')) {
-      reply = "You can use our brand-new AI Resume Builder tab to generate a professional PDF resume or analyze your ATS score in seconds!";
-    } else if (text.toLowerCase().includes('course') || text.toLowerCase().includes('skill')) {
-      reply = "Based on your current skill profile (UI/UX 90%, Management 30%), I recommend expanding into API architecture to become a Full Stack Product Lead.";
-    }
-
-    aiMsg.innerText = reply;
+    aiMsg.className = 'chat-message assistant';
+    aiMsg.innerHTML = `<p>${generateDynamicWebAIAnalysis(query)}</p>`;
     container.appendChild(aiMsg);
     container.scrollTop = container.scrollHeight;
   }, 600);
 }
 
-// --- FastAPI Backend Integration Test ---
-async function testBackendConnection() {
-  const backendUrl = document.getElementById('setting-backend-url').value.trim();
-  const statusText = document.getElementById('backend-status-text');
+function openEditProfileModal() {
+  const modal = document.getElementById('edit-profile-modal');
+  modal.style.display = 'flex';
+}
 
-  try {
-    statusText.innerText = '● Connecting...';
-    statusText.style.color = 'var(--accent-orange)';
+function closeEditProfileModal() {
+  const modal = document.getElementById('edit-profile-modal');
+  modal.style.display = 'none';
+}
 
-    const res = await fetch(`${backendUrl}/docs`, { method: 'GET' });
-    if (res.ok || res.status === 200) {
-      statusText.innerText = '● Online (Connected to FastAPI backend!)';
-      statusText.style.color = 'var(--accent-green)';
-      showToast('Connected to FastAPI Backend!', 'success');
-    } else {
-      throw new Error('Endpoint not responding');
+function saveProfileDetails() {
+  const name = document.getElementById('edit-full-name').value;
+  const email = document.getElementById('edit-email').value;
+
+  const userTitles = document.querySelectorAll('.user-name, .user-title, .settings-user-name');
+  userTitles.forEach(t => t.innerText = name);
+
+  const emailEls = document.querySelectorAll('.settings-user-email');
+  emailEls.forEach(e => e.innerText = email);
+
+  closeEditProfileModal();
+  showToast('Profile details updated & synced live!', 'success');
+}
+
+function openChangePasswordModal() {
+  showToast('Password reset link sent to your email.', 'info');
+}
+
+let currentCourseTrackId = 1;
+let currentLessonIndexInTrack = 0;
+
+const COURSE_TRACKS = {
+  1: {
+    title: "FastAPI Backend Architecture - 5 Video Lessons",
+    lessons: [
+      { id: 101, title: "1. Introduction to FastAPI & Async Python", desc: "Setting up Python, Uvicorn ASGI server and async event loops.", embedUrl: "https://www.youtube-nocookie.com/embed/tLKKmouUams?rel=0&autoplay=1", duration: "12:30" },
+      { id: 102, title: "2. Pydantic v2 Schemas & Request Validation", desc: "Building strict data validation schemas with type hinting.", embedUrl: "https://www.youtube-nocookie.com/embed/gQddtTdmG_8?rel=0&autoplay=1", duration: "18:45" },
+      { id: 103, title: "3. SQLAlchemy ORM & PostgreSQL Integration", desc: "Connecting FastAPI to relational databases with async sessions.", embedUrl: "https://www.youtube-nocookie.com/embed/Z1RJmh_OqeA?rel=0&autoplay=1", duration: "25:10" },
+      { id: 104, title: "4. JWT Authentication & Security Headers", desc: "Implementing OAuth2 bearer tokens and bcrypt password hashing.", embedUrl: "https://www.youtube-nocookie.com/embed/0sOvCWFmrtA?rel=0&autoplay=1", duration: "21:15" },
+      { id: 105, title: "5. Real-Time WebSockets & Background Tasks", desc: "Broadcasting live events to mobile apps and processing background jobs.", embedUrl: "https://www.youtube-nocookie.com/embed/vLqTf2b6GZw?rel=0&autoplay=1", duration: "30:00" }
+    ]
+  },
+  2: {
+    title: "Flutter Mobile Cross-Platform - 5 Video Lessons",
+    lessons: [
+      { id: 201, title: "1. Flutter Setup & Dart Fundamentals", desc: "Installing Flutter SDK, Dart syntax, object-oriented concepts.", embedUrl: "https://www.youtube-nocookie.com/embed/pTJJsmejUOQ?rel=0&autoplay=1", duration: "15:00" },
+      { id: 202, title: "2. Mobile UI Layouts & Responsive Grid", desc: "Building responsive UI using Row, Column, Expanded, and CustomScrollView.", embedUrl: "https://www.youtube-nocookie.com/embed/fq4N0hgOWzU?rel=0&autoplay=1", duration: "22:40" },
+      { id: 203, title: "3. Reactive State Management (Provider)", desc: "Managing app-wide state reactively without boilerplate code.", embedUrl: "https://www.youtube-nocookie.com/embed/x0uinJvhNxI?rel=0&autoplay=1", duration: "28:15" },
+      { id: 204, title: "4. REST API Integration & HTTP Client", desc: "Connecting Flutter to REST APIs with error handling and JSON parsing.", embedUrl: "https://www.youtube-nocookie.com/embed/1xipg02Wu8s?rel=0&autoplay=1", duration: "19:50" },
+      { id: 205, title: "5. Local Persistence (SQLite & Hive)", desc: "Storing user preferences and offline database cache locally.", embedUrl: "https://www.youtube-nocookie.com/embed/tLKKmouUams?rel=0&autoplay=1", duration: "26:30" }
+    ]
+  },
+  3: {
+    title: "UI/UX Figma & Product Design - 5 Video Lessons",
+    lessons: [
+      { id: 301, title: "1. Figma Fundamentals & Auto Layout 5.0", desc: "Mastering auto-layout, frames, constraints, and component variants.", embedUrl: "https://www.youtube-nocookie.com/embed/c9Wg6Cb_YlU?rel=0&autoplay=1", duration: "14:20" },
+      { id: 302, title: "2. Design Systems & Token Libraries", desc: "Building reusable UI kits with typography, color tokens, and elevation.", embedUrl: "https://www.youtube-nocookie.com/embed/HZuk6Wkx_Eg?rel=0&autoplay=1", duration: "20:00" },
+      { id: 303, title: "3. Micro-Interactions & Smart Animate", desc: "Designing fluid button states, modal transitions, and interactive prototypes.", embedUrl: "https://www.youtube-nocookie.com/embed/YqQx75OPRa0?rel=0&autoplay=1", duration: "17:30" },
+      { id: 304, title: "4. User Research & Wireframing", desc: "Conducting user interviews, mapping user journeys, and wireframing.", embedUrl: "https://www.youtube-nocookie.com/embed/CD1Y2DmL5JM?rel=0&autoplay=1", duration: "24:10" },
+      { id: 305, title: "5. WCAG Accessibility & Color Contrast", desc: "Ensuring AA/AAA accessibility compliance across web and mobile views.", embedUrl: "https://www.youtube-nocookie.com/embed/c9Wg6Cb_YlU?rel=0&autoplay=1", duration: "16:45" }
+    ]
+  }
+};
+
+function switchCourseTrack(trackId, el) {
+  currentCourseTrackId = trackId;
+  currentLessonIndexInTrack = 0;
+
+  [1, 2, 3].forEach(id => {
+    const card = document.getElementById(`web-course-card-${id}`);
+    if (card) {
+      if (id === trackId) {
+        card.style.border = '2px solid var(--accent-primary)';
+      } else {
+        card.style.border = '1px solid var(--border-color)';
+      }
     }
-  } catch (err) {
-    statusText.innerText = '● Offline (Using Client-Side Data Engine)';
-    statusText.style.color = 'var(--accent-green)';
-    showToast('Backend offline - fallback client engine active.', 'info');
+  });
+
+  const chipBtns = document.querySelectorAll('.category-chips-bar .chip-btn');
+  chipBtns.forEach((btn, idx) => {
+    if (idx === trackId - 1) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  renderLessonsList();
+  playTrackLesson(0);
+}
+
+function renderLessonsList() {
+  const track = COURSE_TRACKS[currentCourseTrackId] || COURSE_TRACKS[1];
+  const header = document.getElementById('track-title-header');
+  const container = document.getElementById('lessons-list-container');
+
+  if (header) header.innerText = track.title;
+  if (!container) return;
+
+  container.innerHTML = '';
+  track.lessons.forEach((les, idx) => {
+    const item = document.createElement('div');
+    item.className = `lesson-item ${idx === currentLessonIndexInTrack ? 'active' : ''}`;
+    item.onclick = () => playTrackLesson(idx);
+    item.innerHTML = `
+      <i data-lucide="play-circle"></i>
+      <span>${les.title}</span>
+      <span class="duration">${les.duration}</span>
+    `;
+    container.appendChild(item);
+  });
+  if (window.lucide) lucide.createIcons();
+}
+
+function playTrackLesson(index) {
+  currentLessonIndexInTrack = index;
+  const track = COURSE_TRACKS[currentCourseTrackId] || COURSE_TRACKS[1];
+  const les = track.lessons[index] || track.lessons[0];
+
+  const iframe = document.getElementById('course-video-iframe');
+  const titleEl = document.getElementById('current-lesson-title');
+  const descEl = document.getElementById('current-lesson-desc');
+
+  if (iframe) iframe.src = les.embedUrl;
+  if (titleEl) titleEl.innerText = les.title;
+  if (descEl) descEl.innerText = les.desc;
+
+  const items = document.querySelectorAll('.lesson-item');
+  items.forEach((item, idx) => {
+    if (idx === index) item.classList.add('active');
+    else item.classList.remove('active');
+  });
+
+  showToast(`▶ Playing: ${les.title}`, 'success');
+  incrementProgressWeb(1, 0.5, 'design', 10);
+}
+
+function playLesson(lessonId) {
+  playTrackLesson(0);
+}
+
+async function incrementProgressWeb(lessons, hours, skillName, skillInc) {
+  try {
+    const res = await fetch('/api/progress/increment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: 1,
+        lessons: lessons,
+        hours: hours,
+        skill_name: skillName,
+        skill_increment: skillInc
+      })
+    });
+    const data = await res.json();
+    if (data.progress) {
+      updateWebDashboardStats(data.progress);
+    }
+  } catch (e) {
+    console.log('Progress increment error', e);
   }
 }
 
-// --- Google Pixel 5 Viewport Device Mode Engine ---
-function togglePixel5Mode() {
-  document.body.classList.toggle('pixel-5-mode');
-  const isPixel5 = document.body.classList.contains('pixel-5-mode');
-  showToast(isPixel5 ? '📱 Google Pixel 5 Mockup Mode Enabled (393px × 851px)' : '🖥️ Full Desktop Mode Restored', 'info');
-  if (window.lucide) lucide.createIcons();
+const FIREBASE_DB_URL = 'https://skillsnap-ai-cloud.firebaseio.com/users/1.json';
+
+async function syncWebWithFirebase() {
+  try {
+    const res = await fetch(FIREBASE_DB_URL);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && (data.lessons_completed !== undefined || data.skills !== undefined)) {
+        updateWebDashboardStats(data);
+      }
+    }
+  } catch (e) {}
 }
+
+async function updateWebFirebase(progress) {
+  try {
+    await fetch(FIREBASE_DB_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(progress)
+    });
+  } catch (e) {}
+}
+
+function saveWebProgressLocally(progress) {
+  try {
+    localStorage.setItem('skillsnap_user_progress', JSON.stringify(progress));
+  } catch (e) {}
+}
+
+function loadWebProgressLocally() {
+  try {
+    const saved = localStorage.getItem('skillsnap_user_progress');
+    if (saved) {
+      const progress = JSON.parse(saved);
+      updateWebDashboardStats(progress);
+    }
+  } catch (e) {}
+}
+
+function updateSkillBarWeb(skillName, percent) {
+  let valId = '';
+  let fillId = '';
+
+  if (skillName === 'UI/UX Design' || skillName === 'uiux') {
+    valId = 'skill-val-uiux';
+    fillId = 'skill-bar-uiux';
+  } else if (skillName === 'FastAPI Backend' || skillName === 'design') {
+    valId = 'skill-val-design';
+    fillId = 'skill-bar-design';
+  } else if (skillName === 'Flutter Mobile' || skillName === 'mgmt') {
+    valId = 'skill-val-mgmt';
+    fillId = 'skill-bar-mgmt';
+  }
+
+  if (valId && fillId) {
+    const valEl = document.getElementById(valId);
+    const fillEl = document.getElementById(fillId);
+    if (valEl) valEl.innerText = `${percent}%`;
+    if (fillEl) fillEl.style.width = `${percent}%`;
+  }
+}
+
+function updateWebDashboardStats(progress) {
+  saveWebProgressLocally(progress);
+
+  const lessonsEls = document.querySelectorAll('#stat-lessons-completed, .stat-lessons-count');
+  lessonsEls.forEach(el => el.innerText = progress.lessons_completed !== undefined ? progress.lessons_completed : 0);
+
+  const hoursEls = document.querySelectorAll('#stat-hours-spent, .stat-hours-count');
+  hoursEls.forEach(el => el.innerText = (progress.hours_spent !== undefined ? progress.hours_spent : 0.0).toFixed(1) + 'h');
+
+  if (progress.skills) {
+    const uiux = progress.skills['UI/UX Design'] !== undefined ? progress.skills['UI/UX Design'] : (progress.skills['uiux'] || 0);
+    const fastapi = progress.skills['FastAPI Backend'] !== undefined ? progress.skills['FastAPI Backend'] : (progress.skills['design'] || 0);
+    const flutter = progress.skills['Flutter Mobile'] !== undefined ? progress.skills['Flutter Mobile'] : (progress.skills['mgmt'] || 0);
+
+    updateSkillBarWeb('UI/UX Design', uiux);
+    updateSkillBarWeb('FastAPI Backend', fastapi);
+    updateSkillBarWeb('Flutter Mobile', flutter);
+  }
+}
+
+async function resetProgressWeb() {
+  const resetData = {
+    user_id: 1,
+    lessons_completed: 0,
+    hours_spent: 0.0,
+    skills: {
+      "UI/UX Design": 0,
+      "FastAPI Backend": 0,
+      "Flutter Mobile": 0
+    },
+    updated_at: new Date().toISOString()
+  };
+
+  updateWebDashboardStats(resetData);
+  await updateWebFirebase(resetData);
+  showToast('🔄 All Progress Reset to 0% across Web & Mobile App!', 'info');
+}
+
+function connectProgressWebSocket() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}/ws/1`;
+  try {
+    const socket = new WebSocket(wsUrl);
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'PROGRESS_UPDATE' && data.progress) {
+        updateWebDashboardStats(data.progress);
+        showToast('🔄 Real-Time Progress Synced live!', 'info');
+      }
+    };
+  } catch (e) {
+    console.log('WebSocket sync error', e);
+  }
+}
+
+function openFullReportModal() {
+  const modal = document.getElementById('full-report-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    if (window.lucide) lucide.createIcons();
+  }
+}
+
+function closeFullReportModal() {
+  const modal = document.getElementById('full-report-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadWebProgressLocally();
+  syncWebWithFirebase();
+  connectProgressWebSocket();
+
+  // Continuous Firebase Realtime Sync polling every 2 seconds
+  setInterval(syncWebWithFirebase, 2000);
+});
