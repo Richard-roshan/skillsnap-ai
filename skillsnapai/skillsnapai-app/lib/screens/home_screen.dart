@@ -40,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> loadDashboard() async {
+    if (!mounted) return;
     try {
       setState(() {
         isLoading = true;
@@ -48,12 +49,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Replace 1 with logged-in user id from shared preferences later
       final data = await ApiService.fetchHomeDashboard(1);
+      if (!mounted) return;
 
       setState(() {
         dashboard = data;
         isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         errorMessage = e.toString();
         isLoading = false;
