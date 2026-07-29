@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'firebase_service.dart';
+
 class ApiService {
   static const String baseUrl = 'http://localhost:8000';
   static const String wsUrl = 'ws://10.0.2.2:8000';
@@ -25,59 +27,26 @@ class ApiService {
     return null;
   }
 
-  static const String firebaseDbUrl = 'https://skillsnap-ai-cloud.firebaseio.com/users/1.json';
+  static const String firebaseDbUrl = FirebaseService.firebaseDbUrl;
 
   static Future<void> syncWithFirebase() async {
-    final urls = [
-      'http://10.0.2.2:8000/users/1.json',
-      'http://localhost:8000/users/1.json',
-      firebaseDbUrl,
-    ];
-
-    for (var u in urls) {
-      try {
-        final response = await http.get(Uri.parse(u)).timeout(const Duration(seconds: 2));
-        if (response.statusCode == 200 && response.body != 'null') {
-          final data = jsonDecode(response.body) as Map<String, dynamic>;
-          if (data['lessons_completed'] != null || data['skills'] != null) {
-            if (data['lessons_completed'] != null) lessonsCompleted = (data['lessons_completed'] as num).toInt();
-            if (data['hours_spent'] != null) hoursSpent = (data['hours_spent'] as num).toDouble();
-            if (data['skills'] != null) {
-              skillLevels = Map<String, int>.from(data['skills'] as Map);
-            }
-            await saveProgressLocally(data);
-            break;
-          }
-        }
-      } catch (_) {}
+    final data = await FirebaseService.fetchProgressFromFirebase();
+    if (data != null) {
+      if (data['lessons_completed'] != null) lessonsCompleted = (data['lessons_completed'] as num).toInt();
+      if (data['hours_spent'] != null) hoursSpent = (data['hours_spent'] as num).toDouble();
+      if (data['skills'] != null) {
+        skillLevels = Map<String, int>.from(data['skills'] as Map);
+      }
+      await saveProgressLocally(data);
     }
   }
 
   static Future<void> updateFirebase() async {
-    final data = {
-      'user_id': 1,
-      'lessons_completed': lessonsCompleted,
-      'hours_spent': hoursSpent,
-      'skills': skillLevels,
-      'updated_at': DateTime.now().toIso8601String()
-    };
-
-    final urls = [
-      'http://10.0.2.2:8000/users/1.json',
-      'http://localhost:8000/users/1.json',
-      firebaseDbUrl,
-    ];
-
-    for (var u in urls) {
-      try {
-        await http.put(
-          Uri.parse(u),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(data),
-        ).timeout(const Duration(seconds: 2));
-      } catch (_) {}
-    }
-    await saveProgressLocally(data);
+    await FirebaseService.pushProgressToFirebase(
+      lessonsCompleted: lessonsCompleted,
+      hoursSpent: hoursSpent,
+      skills: skillLevels,
+    );
   }
 
   static String getWebSocketUrl(int userId) => '$wsUrl/ws/$userId';

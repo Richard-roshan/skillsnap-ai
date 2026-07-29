@@ -958,27 +958,84 @@ async function incrementProgressWeb(lessons, hours, skillName, skillInc) {
 }
 
 const FIREBASE_DB_URL = 'https://skillsnap-ai-cloud.firebaseio.com/users/1.json';
+const FIREBASE_CONFIG = {
+  databaseURL: "https://skillsnap-ai-cloud.firebaseio.com",
+  projectId: "skillsnap-ai-cloud"
+};
+
+let firebaseDbInstance = null;
+
+function initFirebaseSDK() {
+  try {
+    if (typeof firebase !== 'undefined' && (!firebase.apps || !firebase.apps.length)) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      firebaseDbInstance = firebase.database();
+      console.log('⚡ Firebase Realtime Cloud Database SDK Connected for Web!');
+      
+      // Real-time Cloud Data Listener
+      firebaseDbInstance.ref('users/1').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          updateWebDashboardStats(data);
+          saveWebProgressLocally(data);
+        }
+      });
+    }
+  } catch (e) {
+    console.log('Firebase SDK init fallback to REST sync', e);
+  }
+}
 
 async function syncWebWithFirebase() {
-  try {
-    const res = await fetch(FIREBASE_DB_URL);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && (data.lessons_completed !== undefined || data.skills !== undefined)) {
-        updateWebDashboardStats(data);
+  initFirebaseSDK();
+  const endpoints = [
+    getBackendUrl() + '/users/1.json',
+    FIREBASE_DB_URL
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(2500) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.lessons_completed !== undefined || data.skills !== undefined)) {
+          updateWebDashboardStats(data);
+          saveWebProgressLocally(data);
+          break;
+        }
       }
-    }
-  } catch (e) {}
+    } catch (e) {}
+  }
 }
 
 async function updateWebFirebase(progress) {
-  try {
-    await fetch(FIREBASE_DB_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(progress)
-    });
-  } catch (e) {}
+  const payload = {
+    ...progress,
+    platform: 'Web Application',
+    updated_at: new Date().toISOString()
+  };
+
+  if (firebaseDbInstance) {
+    try {
+      await firebaseDbInstance.ref('users/1').set(payload);
+    } catch (e) {}
+  }
+
+  const endpoints = [
+    getBackendUrl() + '/users/1.json',
+    FIREBASE_DB_URL
+  ];
+
+  for (const url of endpoints) {
+    try {
+      await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {}
+  }
+  saveWebProgressLocally(payload);
 }
 
 function saveWebProgressLocally(progress) {
