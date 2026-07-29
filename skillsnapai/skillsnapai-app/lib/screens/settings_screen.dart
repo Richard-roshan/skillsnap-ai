@@ -189,6 +189,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 _sectionTile(
                   isDark: isDark,
+                  icon: Icons.bolt,
+                  title: '⚡ Make Progress & Sync Live to Web',
+                  subtitle: 'Complete +1 lesson & sync live to Firebase and Website',
+                  onTap: () async {
+                    ApiService.lessonsCompleted += 1;
+                    ApiService.hoursSpent = double.parse((ApiService.hoursSpent + 0.5).toStringAsFixed(1));
+                    await ApiService.updateFirebase();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('⚡ Mobile Progress Made! Lesson #${ApiService.lessonsCompleted} Completed (+0.5h). Synced live to Firebase & Web!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                _sectionTile(
+                  isDark: isDark,
                   icon: Icons.person_outline,
                   title: 'Profile Details',
                   subtitle: 'Edit name, email and phone (Syncs Live)',
