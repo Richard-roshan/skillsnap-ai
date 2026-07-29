@@ -151,14 +151,6 @@ class ApiService {
     }
   }
 
-  static int lessonsCompleted = 14;
-  static double hoursSpent = 7.0;
-  static Map<String, int> skillLevels = {
-    "UI/UX Design": 0,
-    "FastAPI Backend": 100,
-    "Flutter Mobile": 0,
-  };
-
   static Future<void> incrementProgress({int lessons = 1, double hours = 0.5, String skill = 'UI/UX Design', int skillInc = 15}) async {
     lessonsCompleted += lessons;
     hoursSpent += hours;
