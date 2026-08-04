@@ -16,11 +16,8 @@ class FirebaseService {
   /// Get fallback endpoints for dynamic userId
   static List<String> getEndpointsForUser(String userId) {
     return [
-      'http://localhost:8000/users/$userId.json',
       '$rtdbBaseUrl/users/$userId.json',
       '$firebaseDbBaseUrl/users/$userId.json',
-      'http://172.20.10.3:8000/users/$userId.json',
-      'http://10.0.2.2:8000/users/$userId.json',
     ];
   }
 
