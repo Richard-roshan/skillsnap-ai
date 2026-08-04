@@ -1159,10 +1159,10 @@ function updateSkillBarWeb(skillName, percent) {
 function updateWebDashboardStats(progress) {
   saveWebProgressLocally(progress);
 
-  const lessonsEls = document.querySelectorAll('#stat-lessons-completed, .stat-lessons-count');
+  const lessonsEls = document.querySelectorAll('#stat-lessons-completed, .stat-lessons-count, #dash-lessons, .lessons-count, #metric-lessons-completed');
   lessonsEls.forEach(el => el.innerText = progress.lessons_completed !== undefined ? progress.lessons_completed : 0);
 
-  const hoursEls = document.querySelectorAll('#stat-hours-spent, .stat-hours-count');
+  const hoursEls = document.querySelectorAll('#stat-hours-spent, .stat-hours-count, #dash-hours, .hours-count, #metric-hours-spent');
   hoursEls.forEach(el => el.innerText = (progress.hours_spent !== undefined ? progress.hours_spent : 0.0).toFixed(1) + 'h');
 
   if (progress.skills) {
