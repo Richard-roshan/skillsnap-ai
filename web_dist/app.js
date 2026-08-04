@@ -1222,22 +1222,22 @@ function updateWebDashboardStats(progress) {
   // 2. Update Skill Progress Bars & Text Labels
   const skills = data.skills || { "UI/UX Design": 75, "FastAPI Backend": 40, "Flutter Mobile": 30 };
 
-  // UI/UX
-  const uiuxVal = skills["UI/UX Design"] ?? 75;
+  // UI/UX (75%)
+  const uiuxVal = (skills["UI/UX Design"] !== undefined ? skills["UI/UX Design"] : 75);
   const uiuxText = document.getElementById('uiux-text') || document.getElementById('skill-val-uiux');
   if (uiuxText) uiuxText.innerText = uiuxVal + '%';
   const uiuxFill = document.getElementById('uiux-progress') || document.getElementById('skill-bar-uiux');
   if (uiuxFill) uiuxFill.style.width = uiuxVal + '%';
 
-  // FastAPI
-  const fastapiVal = skills["FastAPI Backend"] ?? 40;
+  // FastAPI (40%)
+  const fastapiVal = (skills["FastAPI Backend"] !== undefined ? skills["FastAPI Backend"] : 40);
   const fastapiText = document.getElementById('fastapi-text') || document.getElementById('skill-val-design');
   if (fastapiText) fastapiText.innerText = fastapiVal + '%';
   const fastapiFill = document.getElementById('fastapi-progress') || document.getElementById('skill-bar-design');
   if (fastapiFill) fastapiFill.style.width = fastapiVal + '%';
 
-  // Flutter
-  const flutterVal = skills["Flutter Mobile"] ?? 30;
+  // Flutter Mobile (30%)
+  const flutterVal = (skills["Flutter Mobile"] !== undefined ? skills["Flutter Mobile"] : 30);
   const flutterText = document.getElementById('flutter-text') || document.getElementById('skill-val-mgmt');
   if (flutterText) flutterText.innerText = flutterVal + '%';
   const flutterFill = document.getElementById('flutter-progress') || document.getElementById('skill-bar-mgmt');
