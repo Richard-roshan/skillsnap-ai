@@ -1046,17 +1046,17 @@ async function initializeLiveUserRecord(userId, fullName = 'John Jonson') {
     user_id: userId,
     full_name: fullName,
     email: "johnjonson@email.com",
-    lessons_completed: 27,
-    hours_spent: 13.0,
-    ats_score: 94,
+    lessons_completed: 31,
+    hours_spent: 15.0,
+    ats_score: 98,
     skills: {
       "UI/UX Design": 100,
-      "FastAPI Backend": 40,
-      "Flutter Mobile": 30
+      "FastAPI Backend": 60,
+      "Flutter Mobile": 50
     },
     profile: { full_name: fullName, email: "johnjonson@email.com" },
     created_at: new Date().toISOString(),
-    updated_at: "2026-08-05T01:00:00Z"
+    updated_at: "2026-08-05T01:45:00Z"
   };
 
   updateWebDashboardStats(initialData);
@@ -1082,11 +1082,11 @@ const DEFAULT_USER_DATA = {
   user_id: 1,
   full_name: "John Jonson",
   email: "johnjonson@email.com",
-  lessons_completed: 27,
-  hours_spent: 13.0,
-  ats_score: 94,
-  skills: { "UI/UX Design": 100, "FastAPI Backend": 40, "Flutter Mobile": 30 },
-  updated_at: "2026-08-05T01:00:00Z"
+  lessons_completed: 31,
+  hours_spent: 15.0,
+  ats_score: 98,
+  skills: { "UI/UX Design": 100, "FastAPI Backend": 60, "Flutter Mobile": 50 },
+  updated_at: "2026-08-05T01:45:00Z"
 };
 
 async function syncWebWithFirebase(userId = activeUserId) {
