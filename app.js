@@ -1048,11 +1048,14 @@ function renderWebChatMessagesFromFirebase(messages) {
   container.scrollTop = container.scrollHeight;
 }
 
+const FIREBASE_RTDB_URL = 'https://skillsnap-ai-cloud-default-rtdb.firebaseio.com/users/1.json';
+
 async function syncWebWithFirebase() {
   initFirebaseSDK();
   const endpoints = [
-    getBackendUrl() + '/users/1.json',
-    FIREBASE_DB_URL
+    FIREBASE_DB_URL,
+    FIREBASE_RTDB_URL,
+    getBackendUrl() + '/users/1.json'
   ];
 
   for (const url of endpoints) {
@@ -1084,8 +1087,9 @@ async function updateWebFirebase(progress) {
   }
 
   const endpoints = [
-    getBackendUrl() + '/users/1.json',
-    FIREBASE_DB_URL
+    FIREBASE_DB_URL,
+    FIREBASE_RTDB_URL,
+    getBackendUrl() + '/users/1.json'
   ];
 
   for (const url of endpoints) {
