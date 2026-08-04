@@ -1106,6 +1106,23 @@ function saveWebProgressLocally(progress) {
   } catch (e) {}
 }
 
+async function resetWebProgress() {
+  const resetData = {
+    user_id: 1,
+    lessons_completed: 0,
+    hours_spent: 0.0,
+    skills: {
+      "UI/UX Design": 0,
+      "FastAPI Backend": 0,
+      "Flutter Mobile": 0
+    },
+    updated_at: new Date().toISOString()
+  };
+  updateWebDashboardStats(resetData);
+  await updateWebFirebase(resetData);
+  console.log('🔄 All progress reset to 0 and synced live across all devices!');
+}
+
 function loadWebProgressLocally() {
   try {
     const saved = localStorage.getItem('skillsnap_user_progress');
