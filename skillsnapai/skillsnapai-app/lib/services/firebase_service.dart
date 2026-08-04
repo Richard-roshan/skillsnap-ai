@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FirebaseService {
   static const String firebaseDbUrl = 'https://skillsnap-ai-cloud.firebaseio.com/users/1.json';
   static const List<String> fallbackUrls = [
+    'http://172.20.10.3:8000/users/1.json',
     'http://10.0.2.2:8000/users/1.json',
     'http://localhost:8000/users/1.json',
     firebaseDbUrl,
