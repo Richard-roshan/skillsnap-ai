@@ -1082,14 +1082,24 @@ function renderWebChatMessagesFromFirebase(messages) {
   container.scrollTop = container.scrollHeight;
 }
 
+const DEFAULT_USER_DATA = {
+  user_id: 1,
+  full_name: "John Jonson",
+  lessons_completed: 20,
+  hours_spent: 10.0,
+  ats_score: 94,
+  skills: { "UI/UX Design": 75, "FastAPI Backend": 40, "Flutter Mobile": 30 }
+};
+
 async function syncWebWithFirebase(userId = activeUserId) {
   initFirebaseSDK(userId);
   const endpoints = [
+    getBackendUrl() + `/users/${userId}.json`,
     `${FIREBASE_RTDB_BASE}/users/${userId}.json`,
-    `${FIREBASE_DB_BASE}/users/${userId}.json`,
-    getBackendUrl() + `/users/${userId}.json`
+    `${FIREBASE_DB_BASE}/users/${userId}.json`
   ];
 
+  let synced = false;
   for (const url of endpoints) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(2500) });
@@ -1098,10 +1108,15 @@ async function syncWebWithFirebase(userId = activeUserId) {
         if (data && (data.lessons_completed !== undefined || data.skills !== undefined)) {
           updateWebDashboardStats(data);
           saveWebProgressLocally(data);
+          synced = true;
           break;
         }
       }
     } catch (e) {}
+  }
+
+  if (!synced) {
+    updateWebDashboardStats(DEFAULT_USER_DATA);
   }
 }
 
