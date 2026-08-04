@@ -1194,23 +1194,52 @@ function updateSkillBarWeb(skillName, percent) {
 }
 
 function updateWebDashboardStats(progress) {
-  saveWebProgressLocally(progress);
+  const data = progress || {};
+  console.log('Firebase Cloud Data Received:', data);
 
-  const lessonsEls = document.querySelectorAll('#stat-lessons-completed, .stat-lessons-count, #dash-lessons, .lessons-count, #metric-lessons-completed');
-  lessonsEls.forEach(el => el.innerText = progress.lessons_completed !== undefined ? progress.lessons_completed : 0);
+  const skills = data.skills || { "UI/UX Design": 75, "FastAPI Backend": 40, "Flutter Mobile": 30 };
+  const uiux = skills["UI/UX Design"] !== undefined ? skills["UI/UX Design"] : 75;
+  const fastapi = skills["FastAPI Backend"] !== undefined ? skills["FastAPI Backend"] : 40;
+  const flutter = skills["Flutter Mobile"] !== undefined ? skills["Flutter Mobile"] : 30;
 
-  const hoursEls = document.querySelectorAll('#stat-hours-spent, .stat-hours-count, #dash-hours, .hours-count, #metric-hours-spent');
-  hoursEls.forEach(el => el.innerText = (progress.hours_spent !== undefined ? progress.hours_spent : 0.0).toFixed(1) + 'h');
-
-  if (progress.skills) {
-    const uiux = progress.skills['UI/UX Design'] !== undefined ? progress.skills['UI/UX Design'] : (progress.skills['uiux'] || 0);
-    const fastapi = progress.skills['FastAPI Backend'] !== undefined ? progress.skills['FastAPI Backend'] : (progress.skills['design'] || 0);
-    const flutter = progress.skills['Flutter Mobile'] !== undefined ? progress.skills['Flutter Mobile'] : (progress.skills['mgmt'] || 0);
-
-    updateSkillBarWeb('UI/UX Design', uiux);
-    updateSkillBarWeb('FastAPI Backend', fastapi);
-    updateSkillBarWeb('Flutter Mobile', flutter);
+  // Direct DOM Updates
+  if (document.getElementById('uiux-progress')) {
+    document.getElementById('uiux-progress').style.width = uiux + '%';
   }
+  if (document.getElementById('uiux-text')) {
+    document.getElementById('uiux-text').innerText = uiux + '%';
+  }
+
+  if (document.getElementById('fastapi-progress')) {
+    document.getElementById('fastapi-progress').style.width = fastapi + '%';
+  }
+  if (document.getElementById('fastapi-text')) {
+    document.getElementById('fastapi-text').innerText = fastapi + '%';
+  }
+
+  if (document.getElementById('flutter-progress')) {
+    document.getElementById('flutter-progress').style.width = flutter + '%';
+  }
+  if (document.getElementById('flutter-text')) {
+    document.getElementById('flutter-text').innerText = flutter + '%';
+  }
+
+  // Stats updates
+  if (document.getElementById('lessons-completed')) {
+    document.getElementById('lessons-completed').innerText = data.lessons_completed !== undefined ? data.lessons_completed : 20;
+  }
+  if (document.getElementById('hours-spent')) {
+    document.getElementById('hours-spent').innerText = (data.hours_spent !== undefined ? data.hours_spent : 10) + 'h';
+  }
+
+  // Legacy fallback selectors
+  const lessonsEls = document.querySelectorAll('#stat-lessons-completed, .stat-lessons-count, #dash-lessons, .lessons-count');
+  lessonsEls.forEach(el => el.innerText = data.lessons_completed !== undefined ? data.lessons_completed : 20);
+
+  const hoursEls = document.querySelectorAll('#stat-hours-spent, .stat-hours-count, #dash-hours, .hours-count');
+  hoursEls.forEach(el => el.innerText = (data.hours_spent !== undefined ? data.hours_spent : 10.0) + 'h');
+
+  saveWebProgressLocally(data);
 }
 
 async function resetProgressWeb() {
