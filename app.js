@@ -992,39 +992,46 @@ async function autoTrackAndSyncProgress(lessonsInc = 1, hoursInc = 0.5, skillNam
   console.log('⚡ Automatic Progress Tracked & Synced Live to Firebase:', newProgress);
 }
 
-const FIREBASE_DB_URL = 'https://skillsnap-ai-cloud.firebaseio.com/users/1.json';
+let activeUserId = '1';
+const FIREBASE_RTDB_BASE = 'https://skillsnap-ai-cloud-default-rtdb.firebaseio.com';
+const FIREBASE_DB_BASE = 'https://skillsnap-ai-cloud.firebaseio.com';
+
 const FIREBASE_CONFIG = {
-  databaseURL: "https://skillsnap-ai-cloud.firebaseio.com",
+  databaseURL: "https://skillsnap-ai-cloud-default-rtdb.firebaseio.com",
   projectId: "skillsnap-ai-cloud"
 };
 
 let firebaseDbInstance = null;
 
-function initFirebaseSDK() {
+function initFirebaseSDK(userId = activeUserId) {
+  activeUserId = userId;
   try {
     if (typeof firebase !== 'undefined' && (!firebase.apps || !firebase.apps.length)) {
       firebase.initializeApp(FIREBASE_CONFIG);
       firebaseDbInstance = firebase.database();
-      console.log('⚡ Firebase Realtime Cloud Database SDK Connected (WhatsApp Web style sync active)!');
-      
-      // Real-time Cloud Data & Chat Listener
-      firebaseDbInstance.ref('users/1').on('value', (snapshot) => {
+      console.log(`⚡ Dynamic Firebase Realtime Cloud SDK Connected (users/${userId})!`);
+    }
+
+    if (firebaseDbInstance) {
+      // Dynamic real-time listener on active user node
+      firebaseDbInstance.ref(`users/${userId}`).on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
           updateWebDashboardStats(data);
 
-          // WhatsApp Web style Profile Name Sync
           if (data.profile && data.profile.full_name) {
             const name = data.profile.full_name;
             document.querySelectorAll('.user-name, .user-title, .settings-user-name').forEach(t => t.innerText = name);
           }
 
-          // WhatsApp Web style Live Chat Sync
           if (data.chat_messages && Array.isArray(data.chat_messages)) {
             renderWebChatMessagesFromFirebase(data.chat_messages);
           }
 
           saveWebProgressLocally(data);
+        } else {
+          // Initialize clean fallback record if node doesn't exist yet
+          initializeLiveUserRecord(userId, 'John Jonson');
         }
       });
     }
@@ -1033,11 +1040,28 @@ function initFirebaseSDK() {
   }
 }
 
+async function initializeLiveUserRecord(userId, fullName = 'New User') {
+  const initialData = {
+    user_id: userId,
+    full_name: fullName,
+    lessons_completed: 0,
+    hours_spent: 0.0,
+    ats_score: 0,
+    skills: {},
+    profile: { full_name: fullName, email: `${userId}@skillsnap.ai` },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  updateWebDashboardStats(initialData);
+  await updateWebFirebase(initialData, userId);
+  return initialData;
+}
+
 function renderWebChatMessagesFromFirebase(messages) {
   const container = document.getElementById('chat-messages-container');
   if (!container) return;
   
-  // Clear and re-render messages from cloud database
   container.innerHTML = '';
   messages.forEach(msg => {
     const msgDiv = document.createElement('div');
@@ -1048,14 +1072,12 @@ function renderWebChatMessagesFromFirebase(messages) {
   container.scrollTop = container.scrollHeight;
 }
 
-const FIREBASE_RTDB_URL = 'https://skillsnap-ai-cloud-default-rtdb.firebaseio.com/users/1.json';
-
-async function syncWebWithFirebase() {
-  initFirebaseSDK();
+async function syncWebWithFirebase(userId = activeUserId) {
+  initFirebaseSDK(userId);
   const endpoints = [
-    FIREBASE_DB_URL,
-    FIREBASE_RTDB_URL,
-    getBackendUrl() + '/users/1.json'
+    `${FIREBASE_RTDB_BASE}/users/${userId}.json`,
+    `${FIREBASE_DB_BASE}/users/${userId}.json`,
+    getBackendUrl() + `/users/${userId}.json`
   ];
 
   for (const url of endpoints) {
@@ -1073,23 +1095,24 @@ async function syncWebWithFirebase() {
   }
 }
 
-async function updateWebFirebase(progress) {
+async function updateWebFirebase(progress, userId = activeUserId) {
   const payload = {
     ...progress,
+    user_id: userId,
     platform: 'Web Application',
     updated_at: new Date().toISOString()
   };
 
   if (firebaseDbInstance) {
     try {
-      await firebaseDbInstance.ref('users/1').set(payload);
+      await firebaseDbInstance.ref(`users/${userId}`).update(payload);
     } catch (e) {}
   }
 
   const endpoints = [
-    FIREBASE_DB_URL,
-    FIREBASE_RTDB_URL,
-    getBackendUrl() + '/users/1.json'
+    `${FIREBASE_RTDB_BASE}/users/${userId}.json`,
+    `${FIREBASE_DB_BASE}/users/${userId}.json`,
+    getBackendUrl() + `/users/${userId}.json`
   ];
 
   for (const url of endpoints) {
