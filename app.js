@@ -1013,32 +1013,27 @@ function initFirebaseSDK(userId = activeUserId) {
     }
 
     if (firebaseDbInstance) {
-      // Immediate initial fetch on page load
-      firebaseDbInstance.ref(`users/${activeUserId}`).once('value').then(snapshot => {
-        if (snapshot.exists()) {
-          updateWebDashboardStats(snapshot.val());
-        }
-      }).catch(() => {});
+      const userRef = firebaseDbInstance.ref(`users/${activeUserId}`);
 
-      // Continuous real-time listener on active user node
-      firebaseDbInstance.ref(`users/${activeUserId}`).on('value', (snapshot) => {
+      // Continuous live WebSocket listener fires automatically on ANY database change
+      userRef.on('value', (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          updateWebDashboardStats(data);
+        if (!data) return;
 
-          if (data.profile && data.profile.full_name) {
-            const name = data.profile.full_name;
-            document.querySelectorAll('.user-name, .user-title, .settings-user-name').forEach(t => t.innerText = name);
-          }
+        console.log('⚡ Real-time update received from Firebase:', data);
 
-          if (data.chat_messages && Array.isArray(data.chat_messages)) {
-            renderWebChatMessagesFromFirebase(data.chat_messages);
-          }
+        updateWebDashboardStats(data);
 
-          saveWebProgressLocally(data);
-        } else {
-          initializeLiveUserRecord(activeUserId, 'John Jonson');
+        if (data.profile && data.profile.full_name) {
+          const name = data.profile.full_name;
+          document.querySelectorAll('.user-name, .user-title, .settings-user-name').forEach(t => t.innerText = name);
         }
+
+        if (data.chat_messages && Array.isArray(data.chat_messages)) {
+          renderWebChatMessagesFromFirebase(data.chat_messages);
+        }
+
+        saveWebProgressLocally(data);
       });
     }
   } catch (e) {
@@ -1050,11 +1045,11 @@ async function initializeLiveUserRecord(userId, fullName = 'John Jonson') {
   const initialData = {
     user_id: userId,
     full_name: fullName,
-    lessons_completed: 20,
-    hours_spent: 10.0,
-    ats_score: 94,
+    lessons_completed: 27,
+    hours_spent: 13.0,
+    ats_score: 98,
     skills: {
-      "UI/UX Design": 75,
+      "UI/UX Design": 100,
       "FastAPI Backend": 40,
       "Flutter Mobile": 30
     },
@@ -1085,10 +1080,10 @@ function renderWebChatMessagesFromFirebase(messages) {
 const DEFAULT_USER_DATA = {
   user_id: 1,
   full_name: "John Jonson",
-  lessons_completed: 20,
-  hours_spent: 10.0,
-  ats_score: 94,
-  skills: { "UI/UX Design": 75, "FastAPI Backend": 40, "Flutter Mobile": 30 }
+  lessons_completed: 27,
+  hours_spent: 13.0,
+  ats_score: 98,
+  skills: { "UI/UX Design": 100, "FastAPI Backend": 40, "Flutter Mobile": 30 }
 };
 
 async function syncWebWithFirebase(userId = activeUserId) {
