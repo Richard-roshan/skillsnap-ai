@@ -1212,36 +1212,38 @@ function updateWebDashboardStats(progress) {
   const data = progress || {};
   console.log('Firebase Cloud Data Received:', data);
 
-  // 1. Update Lessons & Hours
-  const lessonsEl = document.getElementById('lessons-completed') || document.getElementById('stat-lessons-val') || document.querySelector('.lessons-count');
-  if (lessonsEl) lessonsEl.innerText = data.lessons_completed ?? 20;
+  const lessons = data.lessons_completed ?? 27;
+  const hours = data.hours_spent ?? 13.0;
+  const skills = data.skills || {};
 
-  const hoursEl = document.getElementById('hours-spent') || document.getElementById('stat-hours-val') || document.querySelector('.hours-count');
-  if (hoursEl) hoursEl.innerText = (data.hours_spent ?? 10.0) + 'h';
+  const uiux = skills['UI/UX Design'] ?? 100;
+  const fastapi = skills['FastAPI Backend'] ?? 40;
+  const flutter = skills['Flutter Mobile'] ?? 30;
 
-  // 2. Update Skill Progress Bars & Text Labels
-  const skills = data.skills || { "UI/UX Design": 75, "FastAPI Backend": 40, "Flutter Mobile": 30 };
+  if (document.getElementById('lessons-completed')) 
+    document.getElementById('lessons-completed').innerText = lessons;
+  if (document.getElementById('stat-lessons-val')) 
+    document.getElementById('stat-lessons-val').innerText = lessons;
 
-  // UI/UX (75%)
-  const uiuxVal = (skills["UI/UX Design"] !== undefined ? skills["UI/UX Design"] : 75);
-  const uiuxText = document.getElementById('uiux-text') || document.getElementById('skill-val-uiux');
-  if (uiuxText) uiuxText.innerText = uiuxVal + '%';
-  const uiuxFill = document.getElementById('uiux-progress') || document.getElementById('skill-bar-uiux');
-  if (uiuxFill) uiuxFill.style.width = uiuxVal + '%';
+  if (document.getElementById('hours-spent')) 
+    document.getElementById('hours-spent').innerText = hours + 'h';
+  if (document.getElementById('stat-hours-val')) 
+    document.getElementById('stat-hours-val').innerText = hours + 'h';
 
-  // FastAPI (40%)
-  const fastapiVal = (skills["FastAPI Backend"] !== undefined ? skills["FastAPI Backend"] : 40);
-  const fastapiText = document.getElementById('fastapi-text') || document.getElementById('skill-val-design');
-  if (fastapiText) fastapiText.innerText = fastapiVal + '%';
-  const fastapiFill = document.getElementById('fastapi-progress') || document.getElementById('skill-bar-design');
-  if (fastapiFill) fastapiFill.style.width = fastapiVal + '%';
+  if (document.getElementById('uiux-progress')) 
+    document.getElementById('uiux-progress').style.width = uiux + '%';
+  if (document.getElementById('uiux-text')) 
+    document.getElementById('uiux-text').innerText = uiux + '%';
 
-  // Flutter Mobile (30%)
-  const flutterVal = (skills["Flutter Mobile"] !== undefined ? skills["Flutter Mobile"] : 30);
-  const flutterText = document.getElementById('flutter-text') || document.getElementById('skill-val-mgmt');
-  if (flutterText) flutterText.innerText = flutterVal + '%';
-  const flutterFill = document.getElementById('flutter-progress') || document.getElementById('skill-bar-mgmt');
-  if (flutterFill) flutterFill.style.width = flutterVal + '%';
+  if (document.getElementById('fastapi-progress')) 
+    document.getElementById('fastapi-progress').style.width = fastapi + '%';
+  if (document.getElementById('fastapi-text')) 
+    document.getElementById('fastapi-text').innerText = fastapi + '%';
+
+  if (document.getElementById('flutter-progress')) 
+    document.getElementById('flutter-progress').style.width = flutter + '%';
+  if (document.getElementById('flutter-text')) 
+    document.getElementById('flutter-text').innerText = flutter + '%';
 
   saveWebProgressLocally(data);
 }
