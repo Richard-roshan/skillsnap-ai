@@ -51,9 +51,10 @@ class FirebaseService {
     final initialRecord = {
       'user_id': userId,
       'full_name': fullName,
+      'email': 'johnjonson@email.com',
       'lessons_completed': 27,
       'hours_spent': 13.0,
-      'ats_score': 98,
+      'ats_score': 94,
       'skills': <String, int>{
         'UI/UX Design': 100,
         'FastAPI Backend': 40,
@@ -61,7 +62,7 @@ class FirebaseService {
       },
       'profile': {'full_name': fullName, 'email': 'johnjonson@email.com'},
       'created_at': DateTime.now().toUtc().toIso8601String(),
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
+      'updated_at': '2026-08-05T01:00:00Z',
     };
 
     await _pushRawStateToFirebase(initialRecord, userId: userId);
