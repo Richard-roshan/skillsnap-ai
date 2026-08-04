@@ -992,7 +992,7 @@ async function autoTrackAndSyncProgress(lessonsInc = 1, hoursInc = 0.5, skillNam
   console.log('⚡ Automatic Progress Tracked & Synced Live to Firebase:', newProgress);
 }
 
-let activeUserId = '1';
+let activeUserId = localStorage.getItem('userId') || '1';
 const FIREBASE_RTDB_BASE = 'https://skillsnap-ai-cloud-default-rtdb.firebaseio.com';
 const FIREBASE_DB_BASE = 'https://skillsnap-ai-cloud.firebaseio.com';
 
@@ -1004,17 +1004,24 @@ const FIREBASE_CONFIG = {
 let firebaseDbInstance = null;
 
 function initFirebaseSDK(userId = activeUserId) {
-  activeUserId = userId;
+  activeUserId = userId || localStorage.getItem('userId') || '1';
   try {
     if (typeof firebase !== 'undefined' && (!firebase.apps || !firebase.apps.length)) {
       firebase.initializeApp(FIREBASE_CONFIG);
       firebaseDbInstance = firebase.database();
-      console.log(`⚡ Dynamic Firebase Realtime Cloud SDK Connected (users/${userId})!`);
+      console.log(`⚡ Dynamic Firebase Realtime Cloud SDK Connected (users/${activeUserId})!`);
     }
 
     if (firebaseDbInstance) {
-      // Dynamic real-time listener on active user node
-      firebaseDbInstance.ref(`users/${userId}`).on('value', (snapshot) => {
+      // Immediate initial fetch on page load
+      firebaseDbInstance.ref(`users/${activeUserId}`).once('value').then(snapshot => {
+        if (snapshot.exists()) {
+          updateWebDashboardStats(snapshot.val());
+        }
+      }).catch(() => {});
+
+      // Continuous real-time listener on active user node
+      firebaseDbInstance.ref(`users/${activeUserId}`).on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
           updateWebDashboardStats(data);
@@ -1030,8 +1037,7 @@ function initFirebaseSDK(userId = activeUserId) {
 
           saveWebProgressLocally(data);
         } else {
-          // Initialize clean fallback record if node doesn't exist yet
-          initializeLiveUserRecord(userId, 'John Jonson');
+          initializeLiveUserRecord(activeUserId, 'John Jonson');
         }
       });
     }
