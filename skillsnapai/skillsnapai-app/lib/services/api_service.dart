@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'firebase_service.dart';
 
 class ApiService {
   static const String baseUrl = 'http://172.20.10.3:8000';
@@ -38,7 +39,7 @@ class ApiService {
     return null;
   }
 
-  static const String firebaseDbUrl = FirebaseService.firebaseDbUrl;
+  static String get firebaseDbUrl => FirebaseService.firebaseDbUrl;
 
   static Future<void> syncWithFirebase() async {
     final data = await FirebaseService.fetchFullStateFromFirebase();
