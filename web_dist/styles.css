@@ -3,11 +3,11 @@
    ========================================================================== */
 
 :root {
-  /* Modern Slate & Vibrant Blue Palette (Matching Reference Photos) */
-  --bg-primary: #121624;
-  --bg-card: #1B2136;
-  --bg-card-hover: #232B45;
-  --bg-card-secondary: #171D30;
+  /* Sleek Deep Dark Palette (#0E1117 / #121824) */
+  --bg-primary: #0E1117;
+  --bg-card: #121824;
+  --bg-card-hover: #1A2234;
+  --bg-card-secondary: #161C2B;
   
   --text-primary: #FFFFFF;
   --text-secondary: #94A3B8;
@@ -15,25 +15,25 @@
   
   --accent-primary: #3B82F6; /* Mobile Primary Blue */
   --accent-primary-hover: #2563EB;
-  --accent-blue-light: rgba(59, 130, 246, 0.15);
+  --accent-blue-light: rgba(59, 130, 246, 0.18);
   
   --accent-purple: #8B5CF6;
-  --accent-purple-light: rgba(139, 92, 246, 0.15);
+  --accent-purple-light: rgba(139, 92, 246, 0.18);
   
   --accent-green: #10B981;
-  --accent-green-light: rgba(16, 185, 129, 0.15);
+  --accent-green-light: rgba(16, 185, 129, 0.18);
   
   --accent-orange: #F59E0B;
   --accent-cyan: #06B6D4;
   --accent-red: #EF4444;
   
-  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.1);
   --border-radius-lg: 18px;
   --border-radius-md: 12px;
   --border-radius-sm: 8px;
   
   --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.35);
   --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

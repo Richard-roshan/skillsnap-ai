@@ -47,15 +47,19 @@ class FirebaseService {
       } catch (_) {}
     }
 
-    // Dynamic initial record fallback
+    // Seed initial mobile state to Cloud
     final initialRecord = {
       'user_id': userId,
       'full_name': fullName,
-      'lessons_completed': 0,
-      'hours_spent': 0.0,
-      'ats_score': 0,
-      'skills': <String, int>{},
-      'profile': {'full_name': fullName, 'email': '$userId@skillsnap.ai'},
+      'lessons_completed': 20,
+      'hours_spent': 10.0,
+      'ats_score': 94,
+      'skills': <String, int>{
+        'UI/UX Design': 75,
+        'FastAPI Backend': 40,
+        'Flutter Mobile': 30,
+      },
+      'profile': {'full_name': fullName, 'email': 'johnjonson@email.com'},
       'created_at': DateTime.now().toUtc().toIso8601String(),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
