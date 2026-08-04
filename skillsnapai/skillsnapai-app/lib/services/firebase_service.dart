@@ -51,11 +51,11 @@ class FirebaseService {
     final initialRecord = {
       'user_id': userId,
       'full_name': fullName,
-      'lessons_completed': 20,
-      'hours_spent': 10.0,
-      'ats_score': 94,
+      'lessons_completed': 27,
+      'hours_spent': 13.0,
+      'ats_score': 98,
       'skills': <String, int>{
-        'UI/UX Design': 75,
+        'UI/UX Design': 100,
         'FastAPI Backend': 40,
         'Flutter Mobile': 30,
       },
