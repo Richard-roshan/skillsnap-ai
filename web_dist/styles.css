@@ -426,18 +426,21 @@ body.pixel-5-mode .pixel-5-status-bar {
   margin-bottom: 0.3rem;
 }
 
-.skill-bar-bg {
+.skill-bar-track, .skill-bar-bg, .progress-bar-container {
+  width: 100%;
   height: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background-color: #1e293b;
   border-radius: 4px;
   overflow: hidden;
+  margin-top: 6px;
 }
 
-.skill-bar-fill {
+.skill-bar-fill, .progress-bar-fill, #uiux-progress, #fastapi-progress, #flutter-progress {
   height: 100%;
-  background: var(--accent-primary);
+  background: linear-gradient(90deg, #2563eb, #3b82f6) !important;
   border-radius: 4px;
-  transition: width 0.4s ease;
+  transition: width 0.4s ease-in-out;
+  display: block;
 }
 
 .card-footer-right {
