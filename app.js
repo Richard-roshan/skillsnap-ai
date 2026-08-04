@@ -1040,15 +1040,19 @@ function initFirebaseSDK(userId = activeUserId) {
   }
 }
 
-async function initializeLiveUserRecord(userId, fullName = 'New User') {
+async function initializeLiveUserRecord(userId, fullName = 'John Jonson') {
   const initialData = {
     user_id: userId,
     full_name: fullName,
-    lessons_completed: 0,
-    hours_spent: 0.0,
-    ats_score: 0,
-    skills: {},
-    profile: { full_name: fullName, email: `${userId}@skillsnap.ai` },
+    lessons_completed: 20,
+    hours_spent: 10.0,
+    ats_score: 94,
+    skills: {
+      "UI/UX Design": 75,
+      "FastAPI Backend": 40,
+      "Flutter Mobile": 30
+    },
+    profile: { full_name: fullName, email: "johnjonson@email.com" },
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };

@@ -6,3 +6,6 @@ __pycache__/
 *.url
 dist/
 node_modules/
+
+*.apk
+
