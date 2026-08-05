@@ -1091,31 +1091,21 @@ const DEFAULT_USER_DATA = {
 
 async function syncWebWithFirebase(userId = activeUserId) {
   initFirebaseSDK(userId);
-  const endpoints = [
-    getBackendUrl() + `/users/${userId}.json`,
-    `${FIREBASE_RTDB_BASE}/users/${userId}.json`,
-    `${FIREBASE_DB_BASE}/users/${userId}.json`
-  ];
 
-  let synced = false;
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(2500) });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && (data.lessons_completed !== undefined || data.skills !== undefined)) {
-          updateWebDashboardStats(data);
-          saveWebProgressLocally(data);
-          synced = true;
-          break;
-        }
+  try {
+    const localUrl = getBackendUrl() + `/users/${userId}.json`;
+    const res = await fetch(localUrl, { signal: AbortSignal.timeout(1500) });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && (data.lessons_completed !== undefined || data.skills !== undefined)) {
+        updateWebDashboardStats(data);
+        saveWebProgressLocally(data);
+        return;
       }
-    } catch (e) {}
-  }
+    }
+  } catch (e) {}
 
-  if (!synced) {
-    updateWebDashboardStats(DEFAULT_USER_DATA);
-  }
+  updateWebDashboardStats(DEFAULT_USER_DATA);
 }
 
 async function updateWebFirebase(progress, userId = activeUserId) {
