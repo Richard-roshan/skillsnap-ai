@@ -455,7 +455,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const MyCoursesScreen()),
+                                );
+                              },
                               child: const Text(
                                 'View all',
                                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -478,6 +483,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     : null,
                                 fallbackImage: 'assets/images/course1.jpg',
                                 isDark: isDark,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const MyCoursesScreen()),
+                                  );
+                                },
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -490,6 +501,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     : null,
                                 fallbackImage: 'assets/images/course2.jpg',
                                 isDark: isDark,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const MyCoursesScreen()),
+                                  );
+                                },
                               ),
                             ),
                           ],
@@ -681,9 +698,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final skillList = skills.isNotEmpty
         ? skills
         : [
-            {"name": "UI/UX Design", "percent": 0},
-            {"name": "FastAPI Backend", "percent": 100},
-            {"name": "Flutter Mobile", "percent": 0}
+            {"name": "UI/UX Design", "percent": 100},
+            {"name": "FastAPI Backend", "percent": 60},
+            {"name": "Flutter Mobile", "percent": 50}
           ];
 
     return skillList.map((item) {
@@ -694,7 +711,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
       return Padding(
         padding: const EdgeInsets.only(bottom: 10),
-        child: _skillRow(name, value, const Color(0xFF3B82F6), isDark),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyCoursesScreen()),
+            );
+          },
+          child: _skillRow(name, value, const Color(0xFF3B82F6), isDark),
+        ),
       );
     }).toList();
   }
@@ -835,6 +861,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required Map<String, dynamic>? course,
     required String fallbackImage,
     required bool isDark,
+    VoidCallback? onTap,
   }) {
     final imageUrl = course?['image_url']?.toString() ?? '';
     final title = course?['title']?.toString() ?? 'Course';
@@ -843,105 +870,108 @@ class _HomeScreenState extends State<HomeScreen> {
     final rating = course?['rating']?.toString() ?? '0.0';
     final actionText = course?['action_text']?.toString() ?? 'Start';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            child: SizedBox(
-              height: 100,
-              width: double.infinity,
-              child: (imageUrl.isNotEmpty)
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          Image.asset(fallbackImage, fit: BoxFit.cover),
-                    )
-                  : Image.asset(fallbackImage, fit: BoxFit.cover),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              child: SizedBox(
+                height: 100,
+                width: double.infinity,
+                child: (imageUrl.isNotEmpty)
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            Image.asset(fallbackImage, fit: BoxFit.cover),
+                      )
+                    : Image.asset(fallbackImage, fit: BoxFit.cover),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'AI Suggested',
-                  style: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.grey,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? Colors.white70 : Colors.black54,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Text(
-                      lessons,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.star, color: Colors.orange, size: 16),
-                    Text(
-                      rating,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  height: 34,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isDark
-                          ? Colors.grey.shade800
-                          : Colors.grey.shade200,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: Text(
-                      actionText,
-                      style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI Suggested',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.grey,
+                      fontSize: 12,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? Colors.white70 : Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        lessons,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.star, color: Colors.orange, size: 16),
+                      Text(
+                        rating,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 34,
+                    child: ElevatedButton(
+                      onPressed: onTap,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        actionText,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
